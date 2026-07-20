@@ -8,17 +8,20 @@ import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundExcepti
 
 import java.util.UUID;
 
-public class GetTariffUseCase {
+public class ActivateTariffUseCase {
 
     private final TariffPersistence tariffPersistence;
 
-    public GetTariffUseCase(TariffPersistence tariffPersistence) {
+    public ActivateTariffUseCase(TariffPersistence tariffPersistence) {
         this.tariffPersistence = tariffPersistence;
     }
 
     public TariffDTO execute(UUID id) {
-        Tariff tariff = tariffPersistence.findById(id)
+        Tariff existing = tariffPersistence.findById(id)
                 .orElseThrow(() -> new TariffNotFoundException(id));
-        return TariffDTOFactory.toDTO(tariff);
+
+        Tariff activated = existing.activate();
+        Tariff saved = tariffPersistence.save(activated);
+        return TariffDTOFactory.toDTO(saved);
     }
 }
