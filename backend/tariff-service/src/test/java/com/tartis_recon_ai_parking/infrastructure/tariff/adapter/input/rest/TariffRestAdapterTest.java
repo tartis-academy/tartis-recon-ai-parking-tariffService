@@ -233,4 +233,86 @@ class TariffRestAdapterTest {
                 
         verify(deactivateTariffUseCase).execute(id);
     }
+
+    @Test
+    @DisplayName("POST /v1/tariffs - Debe retornar 400 cuando el payload es invalido")
+    void shouldReturn400OnCreateWithInvalidData() throws Exception {
+        // QUE HACE:
+        // Enviar request con precio negativo (violando @DecimalMin)
+        TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("2.0"), true);
+
+        mockMvc.perform(post("/v1/tariffs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                // QUE DEBERIA HACER:
+                // Verificar que devuelve codigo 400 Bad Request
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT /v1/tariffs/{id} - Debe retornar 400 cuando el payload es invalido")
+    void shouldReturn400OnUpdateWithInvalidData() throws Exception {
+        UUID id = UUID.randomUUID();
+        // QUE HACE:
+        // Request con nombre vacio (violando @NotBlank)
+        TariffUpdateRequest request = new TariffUpdateRequest("", new BigDecimal("0.05"), new BigDecimal("2.0"));
+
+        mockMvc.perform(put("/v1/tariffs/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                // QUE DEBERIA HACER:
+                // Verificar que devuelve codigo 400 Bad Request
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /v1/tariffs/{id}/status - Debe retornar 400 cuando el payload es invalido")
+    void shouldReturn400OnStatusChangeWithInvalidData() throws Exception {
+        UUID id = UUID.randomUUID();
+        // QUE HACE:
+        // Request con active nulo (violando @NotNull)
+        TariffStatusRequest request = new TariffStatusRequest(null);
+
+        mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                // QUE DEBERIA HACER:
+                // Verificar que devuelve codigo 400 Bad Request
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("GET /v1/tariffs/{id} - Debe retornar 404 cuando la tarifa no existe")
+    void shouldReturn404OnGetNonExistentTariff() throws Exception {
+        // QUE HACE:
+        // Configura el mock para lanzar TariffNotFoundException
+        UUID id = UUID.randomUUID();
+        when(getTariffUseCase.execute(id)).thenThrow(new com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException(id));
+
+        mockMvc.perform(get("/v1/tariffs/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON))
+                // QUE DEBERIA HACER:
+                // Verificar que devuelve codigo 404 Not Found
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /v1/tariffs/{id} - Debe retornar 404 cuando la tarifa no existe")
+    void shouldReturn404OnUpdateNonExistentTariff() throws Exception {
+        // QUE HACE:
+        // Configura el mock para lanzar TariffNotFoundException al actualizar
+        UUID id = UUID.randomUUID();
+        TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        
+        when(mapper.toUpdateDTO(any(TariffUpdateRequest.class))).thenReturn(updateDto);
+        when(updateTariffUseCase.execute(eq(id), eq(updateDto))).thenThrow(new com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException(id));
+
+        mockMvc.perform(put("/v1/tariffs/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                // QUE DEBERIA HACER:
+                // Verificar que devuelve codigo 404 Not Found
+                .andExpect(status().isNotFound());
+    }
 }
