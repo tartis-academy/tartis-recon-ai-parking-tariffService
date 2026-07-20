@@ -184,6 +184,8 @@ class TariffPersistenceAdapterTest {
     @Test
     @DisplayName("Debe retornar la lista de tarifas filtradas por estado activo")
     void shouldFindTariffsByActive() {
+        // QUE HACE:
+        // Simula la devolucion de una entidad activa desde el repositorio y su mapeo al dominio.
         TariffEntity entity1 = new TariffEntity();
         entity1.setName("Standard");
 
@@ -192,8 +194,11 @@ class TariffPersistenceAdapterTest {
         when(tariffRepository.findByActive(true)).thenReturn(List.of(entity1));
         when(tariffPersistenceMapper.toDomain(entity1)).thenReturn(domain1);
 
+        // Ejecuta la busqueda en el adaptador.
         List<Tariff> result = tariffPersistenceAdapter.findByActive(true);
 
+        // QUE DEBERIA HACER:
+        // Retornar la lista mapeada y verificar la interaccion con los mocks.
         assertThat(result).isNotNull().hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Standard");
         verify(tariffRepository, times(1)).findByActive(true);
@@ -203,6 +208,8 @@ class TariffPersistenceAdapterTest {
     @Test
     @DisplayName("Debe retornar la lista de tarifas activas filtradas por tipo de vehiculo")
     void shouldFindActiveTariffsByType() {
+        // QUE HACE:
+        // Simula la devolucion de entidades por tipo y activas desde el repositorio, mapeandolas al dominio.
         TariffEntity entity1 = new TariffEntity();
         entity1.setName("Standard");
 
@@ -211,8 +218,11 @@ class TariffPersistenceAdapterTest {
         when(tariffRepository.findByActiveTrueAndType(VehicleType.CAR)).thenReturn(List.of(entity1));
         when(tariffPersistenceMapper.toDomain(entity1)).thenReturn(domain1);
 
+        // Ejecuta la busqueda.
         List<Tariff> result = tariffPersistenceAdapter.findActiveByType(VehicleType.CAR);
 
+        // QUE DEBERIA HACER:
+        // Retornar la tarifa esperada validando los llamados a los mocks correspondientes.
         assertThat(result).isNotNull().hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Standard");
         verify(tariffRepository, times(1)).findByActiveTrueAndType(VehicleType.CAR);

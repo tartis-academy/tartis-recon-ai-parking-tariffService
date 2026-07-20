@@ -138,6 +138,8 @@ class TariffRepositoryTest {
     @Test
     @DisplayName("Debe encontrar tarifas por su estado activo")
     void shouldFindTariffsByActive() {
+        // QUE HACE:
+        // Configura y persiste una entidad de tarifa con estado activo.
         UUID id = UUID.randomUUID();
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
@@ -149,7 +151,11 @@ class TariffRepositoryTest {
 
         entityManager.persistAndFlush(entity);
 
+        // Ejecuta la busqueda de tarifas activas.
         List<TariffEntity> activeTariffs = tariffRepository.findByActive(true);
+
+        // QUE DEBERIA HACER:
+        // Retornar la tarifa que fue persistida, verificando que esta activa.
 
         assertThat(activeTariffs).isNotEmpty();
         assertThat(activeTariffs.get(0).getName()).isEqualTo("ActiveTariff");
@@ -158,6 +164,8 @@ class TariffRepositoryTest {
     @Test
     @DisplayName("Debe encontrar tarifas activas por tipo de vehiculo")
     void shouldFindActiveTariffsByType() {
+        // QUE HACE:
+        // Configura y persiste multiples entidades (una activa del tipo buscado, otras inactivas o de otro tipo).
         UUID id1 = UUID.randomUUID();
         TariffEntity entity1 = new TariffEntity();
         entity1.setUniqueId(id1);
@@ -179,21 +187,25 @@ class TariffRepositoryTest {
         UUID id3 = UUID.randomUUID();
         TariffEntity entity3 = new TariffEntity();
         entity3.setUniqueId(id3);
-        entity3.setName("ActiveMotoTariff");
+        entity3.setName("ActiveMotorcycleTariff");
         entity3.setType(VehicleType.MOTORBIKE);
-        entity3.setPricePerMinute(new BigDecimal("0.08"));
-        entity3.setBasePrice(new BigDecimal("3.0"));
+        entity3.setPricePerMinute(new BigDecimal("0.05"));
+        entity3.setBasePrice(new BigDecimal("2.0"));
         entity3.setActive(true);
 
-        entityManager.persistAndFlush(entity1);
-        entityManager.persistAndFlush(entity2);
-        entityManager.persistAndFlush(entity3);
+        entityManager.persist(entity1);
+        entityManager.persist(entity2);
+        entityManager.persist(entity3);
+        entityManager.flush();
 
-        List<TariffEntity> activeCarTariffs = tariffRepository.findByActiveTrueAndType(VehicleType.CAR);
+        // Llama al metodo del repositorio.
+        List<TariffEntity> carTariffs = tariffRepository.findByActiveTrueAndType(VehicleType.CAR);
 
-        assertThat(activeCarTariffs).isNotEmpty().hasSize(1);
-        assertThat(activeCarTariffs.get(0).getName()).isEqualTo("ActiveCarTariff");
-        assertThat(activeCarTariffs.get(0).isActive()).isTrue();
-        assertThat(activeCarTariffs.get(0).getType()).isEqualTo(VehicleType.CAR);
+        // QUE DEBERIA HACER:
+        // Retornar unicamentela entidad 'ActiveCarTariff' y omitir las demas.
+        assertThat(carTariffs).isNotEmpty().hasSize(1);
+        assertThat(carTariffs.get(0).getName()).isEqualTo("ActiveCarTariff");
+        assertThat(carTariffs.get(0).isActive()).isTrue();
+        assertThat(carTariffs.get(0).getType()).isEqualTo(VehicleType.CAR);
     }
 }
