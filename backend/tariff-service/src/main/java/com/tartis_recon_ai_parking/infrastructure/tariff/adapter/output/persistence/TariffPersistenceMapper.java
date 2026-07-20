@@ -2,6 +2,7 @@ package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.output.persist
 
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import org.mapstruct.Mapper;
+import org.mapstruct.ObjectFactory;
 import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
@@ -12,5 +13,19 @@ public interface TariffPersistenceMapper {
 
     Tariff toDomain(TariffEntity entity);
 
-    
+    @ObjectFactory
+    default Tariff create(TariffEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return Tariff.reconstruct(
+                entity.getUniqueId(),
+                entity.getName(),
+                entity.getType(),
+                entity.getPricePerMinute(),
+                entity.getBasePrice(),
+                entity.isActive()
+        );
+    }
+
 }

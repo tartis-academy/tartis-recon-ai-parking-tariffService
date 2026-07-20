@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,8 +42,7 @@ class TariffPersistenceAdapterTest {
         // - Configura los mocks del mapper y del repositorio.
         // - Ejecuta el metodo save del adaptador.
         UUID id = UUID.randomUUID();
-        Tariff tariff = new Tariff("Standard", VehicleType.CAR, 0.05f, 2.0f, true);
-        tariff.setUniqueId(id);
+        Tariff tariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
 
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
@@ -76,8 +76,7 @@ class TariffPersistenceAdapterTest {
         entity.setUniqueId(id);
         entity.setName("Standard");
         
-        Tariff tariff = new Tariff("Standard", VehicleType.CAR, 0.05f, 2.0f, true);
-        tariff.setUniqueId(id);
+        Tariff tariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
 
         when(tariffRepository.findByName("Standard")).thenReturn(Optional.of(entity));
         when(tariffPersistenceMapper.toDomain(entity)).thenReturn(tariff);
@@ -121,8 +120,7 @@ class TariffPersistenceAdapterTest {
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
 
-        Tariff tariff = new Tariff("Standard", VehicleType.CAR, 0.05f, 2.0f, true);
-        tariff.setUniqueId(id);
+        Tariff tariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
 
         when(tariffRepository.findById(id)).thenReturn(Optional.of(entity));
         when(tariffPersistenceMapper.toDomain(entity)).thenReturn(tariff);
@@ -164,8 +162,8 @@ class TariffPersistenceAdapterTest {
         TariffEntity entity2 = new TariffEntity();
         entity2.setName("Premium");
 
-        Tariff domain1 = new Tariff("Standard", VehicleType.CAR, 0.05f, 2.0f, true);
-        Tariff domain2 = new Tariff("Premium", VehicleType.MOTORBIKE, 0.08f, 3.0f, true);
+        Tariff domain1 = Tariff.reconstruct(UUID.randomUUID(), "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        Tariff domain2 = Tariff.reconstruct(UUID.randomUUID(), "Premium", VehicleType.MOTORBIKE, new BigDecimal("0.08"), new BigDecimal("3.0"), true);
 
         when(tariffRepository.findAll()).thenReturn(List.of(entity1, entity2));
         when(tariffPersistenceMapper.toDomain(entity1)).thenReturn(domain1);
@@ -189,7 +187,7 @@ class TariffPersistenceAdapterTest {
         TariffEntity entity1 = new TariffEntity();
         entity1.setName("Standard");
 
-        Tariff domain1 = new Tariff("Standard", VehicleType.CAR, 0.05f, 2.0f, true);
+        Tariff domain1 = Tariff.reconstruct(UUID.randomUUID(), "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
 
         when(tariffRepository.findByActive(true)).thenReturn(List.of(entity1));
         when(tariffPersistenceMapper.toDomain(entity1)).thenReturn(domain1);

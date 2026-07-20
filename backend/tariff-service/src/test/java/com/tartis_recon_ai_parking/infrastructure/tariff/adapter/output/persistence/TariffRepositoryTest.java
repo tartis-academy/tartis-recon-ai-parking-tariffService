@@ -10,6 +10,7 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,8 +41,8 @@ class TariffRepositoryTest {
         entity.setUniqueId(id);
         entity.setName("Standard");
         entity.setType(VehicleType.CAR);
-        entity.setPricePerMinute(0.05f);
-        entity.setBasePrice(2.0f);
+        entity.setPricePerMinute(new BigDecimal("0.05"));
+        entity.setBasePrice(new BigDecimal("2.0"));
         entity.setActive(true);
 
         entityManager.persistAndFlush(entity);
@@ -76,8 +77,8 @@ class TariffRepositoryTest {
         entity.setUniqueId(id);
         entity.setName("Premium");
         entity.setType(VehicleType.MOTORBIKE);
-        entity.setPricePerMinute(0.08f);
-        entity.setBasePrice(3.0f);
+        entity.setPricePerMinute(new BigDecimal("0.08"));
+        entity.setBasePrice(new BigDecimal("3.0"));
         entity.setActive(true);
 
         entityManager.persistAndFlush(entity);
@@ -117,8 +118,8 @@ class TariffRepositoryTest {
         entity.setUniqueId(id);
         entity.setName("Weekend");
         entity.setType(VehicleType.CAR);
-        entity.setPricePerMinute(0.06f);
-        entity.setBasePrice(2.5f);
+        entity.setPricePerMinute(new BigDecimal("0.06"));
+        entity.setBasePrice(new BigDecimal("2.5"));
         entity.setActive(true);
 
         TariffEntity savedEntity = tariffRepository.save(entity);
@@ -131,7 +132,7 @@ class TariffRepositoryTest {
         Optional<TariffEntity> loadedEntityOpt = tariffRepository.findById(id);
         assertThat(loadedEntityOpt).isPresent();
         assertThat(loadedEntityOpt.get().getName()).isEqualTo("Weekend");
-        assertThat(loadedEntityOpt.get().getPricePerMinute()).isEqualTo(0.06f);
+        assertThat(loadedEntityOpt.get().getPricePerMinute()).isEqualTo(new BigDecimal("0.06"));
     }
 
     @Test
@@ -142,8 +143,8 @@ class TariffRepositoryTest {
         entity.setUniqueId(id);
         entity.setName("ActiveTariff");
         entity.setType(VehicleType.CAR);
-        entity.setPricePerMinute(0.05f);
-        entity.setBasePrice(2.0f);
+        entity.setPricePerMinute(new BigDecimal("0.05"));
+        entity.setBasePrice(new BigDecimal("2.0"));
         entity.setActive(true);
 
         entityManager.persistAndFlush(entity);
