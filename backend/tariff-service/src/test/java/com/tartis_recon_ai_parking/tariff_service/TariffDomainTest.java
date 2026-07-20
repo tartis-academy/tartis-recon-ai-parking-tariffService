@@ -15,7 +15,7 @@ class TariffTest {
     // Resultado esperado: Una instancia válida con un UUID auto-generado y activa por defecto.
     @Test
     void shouldCreateTariffWhenValidArguments() {
-        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"));
+        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         assertNotNull(tariff.getUniqueId());
         assertEquals("Standard Car", tariff.getName());
         assertEquals(VehicleType.CAR, tariff.getType());
@@ -44,7 +44,7 @@ class TariffTest {
     // Resultado esperado: Una nueva instancia con los datos actualizados y el UUID y tipo originales (inmutabilidad).
     @Test
     void shouldUpdateTariff() {
-        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"));
+        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         Tariff updated = tariff.update("Updated Car", new BigDecimal("0.08"), new BigDecimal("2.00"));
         assertEquals(tariff.getUniqueId(), updated.getUniqueId());
         assertEquals("Updated Car", updated.getName());
@@ -59,7 +59,7 @@ class TariffTest {
     // Resultado esperado: Instancias nuevas con la bandera 'active' cambiada y el resto de los datos intactos.
     @Test
     void shouldActivateAndDeactivateTariff() {
-        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"));
+        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         assertTrue(tariff.isActive());
         Tariff deactivated = tariff.deactivate();
         assertFalse(deactivated.isActive());
@@ -74,7 +74,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenNameIsNull() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create(null, VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"));
+            Tariff.create(null, VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         });
         assertEquals("Tariff name is null.", exception.getMessage());
     }
@@ -85,7 +85,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenNameIsBlank() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create("   ", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"));
+            Tariff.create("   ", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         });
         assertEquals("Tariff name is null.", exception.getMessage());
     }
@@ -96,7 +96,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenTypeIsNull() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create("Standard Car", null, new BigDecimal("0.05"), new BigDecimal("1.50"));
+            Tariff.create("Standard Car", null, new BigDecimal("0.05"), new BigDecimal("1.50"), true);
         });
         assertEquals("Vehicle type is null.", exception.getMessage());
     }
@@ -107,7 +107,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenPricePerMinuteIsZero() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create("Standard Car", VehicleType.CAR, BigDecimal.ZERO, new BigDecimal("1.50"));
+            Tariff.create("Standard Car", VehicleType.CAR, BigDecimal.ZERO, new BigDecimal("1.50"), true);
         });
         assertEquals("PricePerMinute must be greater than 0.", exception.getMessage());
     }
@@ -118,7 +118,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenPricePerMinuteIsNegative() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("1.50"));
+            Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("1.50"), true);
         });
         assertEquals("PricePerMinute must be greater than 0.", exception.getMessage());
     }
@@ -129,7 +129,7 @@ class TariffTest {
     @Test
     void shouldThrowExceptionWhenBasePriceIsNegative() {
         InvalidTariffException exception = assertThrows(InvalidTariffException.class, () -> {
-            Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("-1.50"));
+            Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("-1.50"), true);
         });
         assertEquals("BasePrice must be a positive number.", exception.getMessage());
     }
@@ -139,7 +139,7 @@ class TariffTest {
     // Resultado esperado: La creación es exitosa y el precio base de la tarifa generada es 0.
     @Test
     void shouldAllowBasePriceZero() {
-        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), BigDecimal.ZERO);
+        Tariff tariff = Tariff.create("Standard Car", VehicleType.CAR, new BigDecimal("0.05"), BigDecimal.ZERO, true);
         assertEquals(BigDecimal.ZERO, tariff.getBasePrice());
     }
 }
