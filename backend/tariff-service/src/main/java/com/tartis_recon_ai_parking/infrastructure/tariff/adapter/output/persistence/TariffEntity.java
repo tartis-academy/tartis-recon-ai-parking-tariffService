@@ -6,6 +6,8 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+
+import java.math.BigDecimal;
 import java.util.UUID;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 
@@ -25,10 +27,10 @@ public class TariffEntity {
     private VehicleType type;
 
     @Column(nullable = false)
-    private float pricePerMinute;
+    private BigDecimal pricePerMinute;
 
     @Column(nullable = false)
-    private float basePrice;
+    private BigDecimal basePrice;
 
     @Column(nullable = false)
     private boolean active;
@@ -37,7 +39,7 @@ public class TariffEntity {
     public TariffEntity() {
     }
 
-    public TariffEntity(UUID uniqueId, String name, VehicleType type, float pricePerMinute, float basePrice, boolean active) {
+    public TariffEntity(UUID uniqueId, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
         this.uniqueId = uniqueId;
         this.name = name;
         this.type = type;
@@ -71,19 +73,19 @@ public class TariffEntity {
         this.type = type;
     }
 
-    public float getPricePerMinute() {
+    public BigDecimal getPricePerMinute() {
         return pricePerMinute;
     }
 
-    public void setPricePerMinute(float pricePerMinute) {
+    public void setPricePerMinute(BigDecimal pricePerMinute) {
         this.pricePerMinute = pricePerMinute;
     }
 
-    public float getBasePrice() {
+    public BigDecimal getBasePrice() {
         return basePrice;
     }
 
-    public void setBasePrice(float basePrice) {
+    public void setBasePrice(BigDecimal basePrice) {
         this.basePrice = basePrice;
     }
 
