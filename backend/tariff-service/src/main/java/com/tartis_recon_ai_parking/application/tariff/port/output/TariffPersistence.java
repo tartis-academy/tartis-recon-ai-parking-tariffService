@@ -4,6 +4,7 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
+import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 
 public interface TariffPersistence {
 
@@ -24,5 +25,8 @@ public interface TariffPersistence {
 
     // Busca tarifas por estado activo/inactivo
     List<Tariff> findByActive(boolean active);
+
+    // Busca tarifas activas por tipo de vehiculo
+    List<Tariff> findActiveByType(VehicleType type);
 
 }

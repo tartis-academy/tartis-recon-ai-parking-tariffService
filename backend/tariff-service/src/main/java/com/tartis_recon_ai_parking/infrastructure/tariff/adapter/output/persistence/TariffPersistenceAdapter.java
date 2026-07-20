@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
+import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 
 public class TariffPersistenceAdapter implements TariffPersistence {
 
@@ -50,6 +51,11 @@ public class TariffPersistenceAdapter implements TariffPersistence {
     @Override
     public List<Tariff> findByActive(boolean active) {
         return tariffRepository.findByActive(active).stream().map(tariffPersistenceMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Tariff> findActiveByType(VehicleType type) {
+        return tariffRepository.findByActiveTrueAndType(type).stream().map(tariffPersistenceMapper::toDomain).toList();
     }
 
 }

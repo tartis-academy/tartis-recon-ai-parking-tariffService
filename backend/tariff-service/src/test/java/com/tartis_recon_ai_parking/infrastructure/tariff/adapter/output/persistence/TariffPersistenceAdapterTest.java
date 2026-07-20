@@ -199,4 +199,23 @@ class TariffPersistenceAdapterTest {
         verify(tariffRepository, times(1)).findByActive(true);
         verify(tariffPersistenceMapper, times(1)).toDomain(any());
     }
+
+    @Test
+    @DisplayName("Debe retornar la lista de tarifas activas filtradas por tipo de vehiculo")
+    void shouldFindActiveTariffsByType() {
+        TariffEntity entity1 = new TariffEntity();
+        entity1.setName("Standard");
+
+        Tariff domain1 = Tariff.reconstruct(UUID.randomUUID(), "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+
+        when(tariffRepository.findByActiveTrueAndType(VehicleType.CAR)).thenReturn(List.of(entity1));
+        when(tariffPersistenceMapper.toDomain(entity1)).thenReturn(domain1);
+
+        List<Tariff> result = tariffPersistenceAdapter.findActiveByType(VehicleType.CAR);
+
+        assertThat(result).isNotNull().hasSize(1);
+        assertThat(result.get(0).getName()).isEqualTo("Standard");
+        verify(tariffRepository, times(1)).findByActiveTrueAndType(VehicleType.CAR);
+        verify(tariffPersistenceMapper, times(1)).toDomain(any());
+    }
 }

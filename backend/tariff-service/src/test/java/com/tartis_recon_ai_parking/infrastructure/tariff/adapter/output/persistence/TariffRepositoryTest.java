@@ -155,4 +155,45 @@ class TariffRepositoryTest {
         assertThat(activeTariffs.get(0).getName()).isEqualTo("ActiveTariff");
         assertThat(activeTariffs.get(0).isActive()).isTrue();
     }
+    @Test
+    @DisplayName("Debe encontrar tarifas activas por tipo de vehiculo")
+    void shouldFindActiveTariffsByType() {
+        UUID id1 = UUID.randomUUID();
+        TariffEntity entity1 = new TariffEntity();
+        entity1.setUniqueId(id1);
+        entity1.setName("ActiveCarTariff");
+        entity1.setType(VehicleType.CAR);
+        entity1.setPricePerMinute(new BigDecimal("0.05"));
+        entity1.setBasePrice(new BigDecimal("2.0"));
+        entity1.setActive(true);
+
+        UUID id2 = UUID.randomUUID();
+        TariffEntity entity2 = new TariffEntity();
+        entity2.setUniqueId(id2);
+        entity2.setName("InactiveCarTariff");
+        entity2.setType(VehicleType.CAR);
+        entity2.setPricePerMinute(new BigDecimal("0.05"));
+        entity2.setBasePrice(new BigDecimal("2.0"));
+        entity2.setActive(false);
+
+        UUID id3 = UUID.randomUUID();
+        TariffEntity entity3 = new TariffEntity();
+        entity3.setUniqueId(id3);
+        entity3.setName("ActiveMotoTariff");
+        entity3.setType(VehicleType.MOTORBIKE);
+        entity3.setPricePerMinute(new BigDecimal("0.08"));
+        entity3.setBasePrice(new BigDecimal("3.0"));
+        entity3.setActive(true);
+
+        entityManager.persistAndFlush(entity1);
+        entityManager.persistAndFlush(entity2);
+        entityManager.persistAndFlush(entity3);
+
+        List<TariffEntity> activeCarTariffs = tariffRepository.findByActiveTrueAndType(VehicleType.CAR);
+
+        assertThat(activeCarTariffs).isNotEmpty().hasSize(1);
+        assertThat(activeCarTariffs.get(0).getName()).isEqualTo("ActiveCarTariff");
+        assertThat(activeCarTariffs.get(0).isActive()).isTrue();
+        assertThat(activeCarTariffs.get(0).getType()).isEqualTo(VehicleType.CAR);
+    }
 }
