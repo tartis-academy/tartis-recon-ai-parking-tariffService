@@ -20,11 +20,12 @@ public final class TariffDTOFactory {
     }
 
     public static Tariff toDomain(TariffCreateDTO tariffDTO) {
-        return new Tariff.create(
+        return Tariff.create(
                 tariffDTO.getName(),
                 tariffDTO.getType(),
                 tariffDTO.getPricePerMinute(),
-                tariffDTO.getBasePrice()
+                tariffDTO.getBasePrice(),
+                tariffDTO.isActive()
         );
     }
 }
