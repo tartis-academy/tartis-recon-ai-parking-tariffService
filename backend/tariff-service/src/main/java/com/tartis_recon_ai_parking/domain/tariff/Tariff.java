@@ -1,95 +1,90 @@
 package com.tartis_recon_ai_parking.domain.tariff;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import com.tartis_recon_ai_parking.domain.tariff.exception.InvalidTariffException;
 
 public class Tariff {
 
-    private UUID uniqueId = UUID.randomUUID();
+    private UUID uniqueId;
 
     private String name;
     private VehicleType type;
-    private float pricePerMinute;
-    private float basePrice;
+    private BigDecimal pricePerMinute;
+    private BigDecimal basePrice;
     private boolean active;
 
-    //Default constructor
-    public Tariff(){}
-
-    public Tariff(String name, VehicleType type, float pricePerMinute, float basePrice, boolean active) {
-
-        //Data validation is located in the "Set" functions.
-        setName(name);
-        setType(type);
-        setPricePerMinute(pricePerMinute);
-        setBasePrice(basePrice);
-        this.active = active;
-
+    public static Tariff create(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice) {
+        return new Tariff(UUID.randomUUID(), name, type, pricePerMinute, basePrice, true);
     }
 
-    //UNIQUEID getter/setter -----------------------------------
+    public static Tariff reconstruct(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
+        return new Tariff(id, name, type, pricePerMinute, basePrice, active);
+    }
+
+    private Tariff(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
+
+        validateData(name, type, pricePerMinute, basePrice);
+        
+        this.uniqueId = id;
+        this.name = name;
+        this.type = type;
+        this.pricePerMinute = pricePerMinute;
+        this.basePrice = basePrice;
+        this.active = active;
+    }
+
+    private void validateData(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice){
+        //Following line will throw an exception if the variable is null or only contains blank characters.
+        if (name == null || name.isBlank()) throw new InvalidTariffException("Tariff name is null.");
+        if (type == null) throw new InvalidTariffException("Vehicle type is null.");
+
+        //BigDecimal's num.compareTo(arg) results:
+        //                  -1 -> num is lower than arg
+        //                   0 -> num is equal to arg
+        //                   1 -> num is greater than arg
+        if (pricePerMinute.compareTo(BigDecimal.ZERO) <= 0) throw new InvalidTariffException("PricePerMinute must be greater than 0.");
+        if (basePrice.compareTo(BigDecimal.ZERO) < 0) throw new InvalidTariffException("BasePrice must be a positive number.");
+
+    }
+    
+    public Tariff update(String name, BigDecimal pricePerMinute, BigDecimal basePrice){
+        return new Tariff(this.uniqueId, name, this.type, pricePerMinute, basePrice, this.active);
+    }
+
+    public Tariff activate() {
+        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, true);
+    }
+
+    public Tariff deactivate() {
+        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, false);
+    }
+
+    //==================== GETTERS ====================
+
     public UUID getUniqueId() {
         return uniqueId;
     }
 
-    public void setUniqueId(UUID uniqueId) {
-        this.uniqueId = uniqueId;
-    }
-
-    //NAME getter/setter -----------------------------------
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        //It will throw an exception if the variable is null or only contains blank characters.
-        if (name == null || name.isBlank()) {
-            throw new InvalidTariffException("Tariff name is null.");
-        }
-        this.name = name;
-    }
-
-    //TYPE getter/setter -----------------------------------
     public VehicleType getType() {
         return type;
     }
 
-    public void setType(VehicleType type) {
-        if (type == null) throw new InvalidTariffException("Vehicle type is null.");
-        this.type = type;
-    }
-
-    //PRICEPERMINUTE getter/setter -----------------------------------
-    public float getPricePerMinute() {
+    public BigDecimal getPricePerMinute() {
         return pricePerMinute;
     }
 
-    public void setPricePerMinute(float pricePerMinute) {
-        if (pricePerMinute <= 0) {
-            throw new InvalidTariffException("PricePerMinute must be greater than 0.");
-        }
-        this.pricePerMinute = pricePerMinute;
-    }
-
-    //BASEPRICE getter/setter -----------------------------------
-    public float getBasePrice() {
+    public BigDecimal getBasePrice() {
         return basePrice;
     }
 
-    public void setBasePrice(float basePrice) {
-        if (basePrice < 0) {
-            throw new InvalidTariffException("BasePrice must be a positive number.");
-        }
-        this.basePrice = basePrice;
-    }
-
-    //ACTIVE getter/setter -----------------------------------
     public boolean isActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
 }
