@@ -14,6 +14,9 @@ public class Tariff {
     private float basePrice;
     private boolean active;
 
+    //Default constructor
+    public Tariff(){}
+
     public Tariff(String name, VehicleType type, float pricePerMinute, float basePrice, boolean active) {
 
         //Data validation is located in the "Set" functions.
