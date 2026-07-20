@@ -33,15 +33,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # TODO: quitar -DskipTests (y anadir el Postgres como service container,
-      # ver el ci.yml de vehicle-service) cuando el dominio de tariff-service
-      # este implementado. Hoy TariffEntity es una clase vacia sin @Entity/@Id,
-      # asi que el @SpringBootTest no puede arrancar el contexto.
-      # jacoco-maven-plugin (pom.xml) igual genera target/site/jacoco/jacoco.xml
-      # en esta fase, aunque no haya tests corriendo: sin ejecuciones el reporte
-      # sale vacio (0% cobertura), pero no rompe el build.
-      - name: Build
-        run: ./mvnw -B verify -DskipTests
+      - name: Build + test
+        run: ./mvnw -B verify
 
       - name: Cache paquetes de SonarCloud
         uses: actions/cache@v4
