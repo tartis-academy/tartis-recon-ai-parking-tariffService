@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
+import com.tartis_recon_ai_parking.domain.tariff.exception.InvalidTariffException;
 
 @ExtendWith(MockitoExtension.class)
 class CreateTariffUseCaseTest {
@@ -53,5 +56,19 @@ class CreateTariffUseCaseTest {
         assertEquals(VehicleType.CAR, result.getType());
         
         verify(tariffPersistence).save(any(Tariff.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar InvalidTariffException al crear una tarifa con datos invalidos")
+    void shouldThrowExceptionWhenCreatingWithInvalidData() {
+        // QUE HACE:
+        // Crea un DTO con datos invalidos (precio negativo) y ejecuta el caso de uso
+        TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("2.0"), true);
+        
+        // QUE DEBERIA HACER:
+        // Verificar que lanza InvalidTariffException y que no interactua con persistencia
+        assertThrows(InvalidTariffException.class, () -> createTariffUseCase.execute(createDto));
+        
+        verify(tariffPersistence, never()).save(any(Tariff.class));
     }
 }

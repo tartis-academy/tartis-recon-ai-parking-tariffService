@@ -1,5 +1,6 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.output.persistence;
 
+
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import org.junit.jupiter.api.DisplayName;
@@ -95,5 +96,6 @@ class TariffPersistenceMapperTest {
         // QUE DEBERIA HACER:
         // El mapper debe retornar null de forma segura y sin lanzar excepciones.
         assertThat(tariff).isNull();
+        assertThat(mapper.create(null)).isNull();
     }
 }

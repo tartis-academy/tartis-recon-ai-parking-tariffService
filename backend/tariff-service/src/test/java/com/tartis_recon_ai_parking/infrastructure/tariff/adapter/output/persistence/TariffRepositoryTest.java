@@ -1,5 +1,6 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.output.persistence;
 
+
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -187,10 +188,10 @@ class TariffRepositoryTest {
         UUID id3 = UUID.randomUUID();
         TariffEntity entity3 = new TariffEntity();
         entity3.setUniqueId(id3);
-        entity3.setName("ActiveMotorcycleTariff");
+        entity3.setName("ActiveMotoTariff");
         entity3.setType(VehicleType.MOTORBIKE);
-        entity3.setPricePerMinute(new BigDecimal("0.05"));
-        entity3.setBasePrice(new BigDecimal("2.0"));
+        entity3.setPricePerMinute(new BigDecimal("0.08"));
+        entity3.setBasePrice(new BigDecimal("3.0"));
         entity3.setActive(true);
 
         entityManager.persist(entity1);

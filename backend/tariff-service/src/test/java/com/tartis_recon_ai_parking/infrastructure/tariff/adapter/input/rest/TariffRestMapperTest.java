@@ -1,5 +1,9 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffCreateDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffUpdateDTO;
@@ -15,7 +19,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class TariffRestMapperTest {
 
@@ -39,6 +42,21 @@ class TariffRestMapperTest {
         assertEquals(request.getPricePerMinute(), dto.getPricePerMinute());
         assertEquals(request.getBasePrice(), dto.getBasePrice());
         assertEquals(request.getActive(), dto.isActive());
+    }
+
+    @Test
+    @DisplayName("Debe mapear de TariffCreateRequest a TariffCreateDTO cuando active es nulo")
+    void shouldMapCreateRequestToDTOWhenActiveIsNull() {
+        // QUE HACE:
+        // Configura un request para crear tarifa con campo active en null
+        TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), null);
+        
+        TariffCreateDTO dto = mapper.toCreateDTO(request);
+        
+        // QUE DEBERIA HACER:
+        // Verificar que el mapper ignora el active o lo setea a falso por defecto
+        assertNotNull(dto);
+        assertEquals(false, dto.isActive());
     }
 
     @Test
