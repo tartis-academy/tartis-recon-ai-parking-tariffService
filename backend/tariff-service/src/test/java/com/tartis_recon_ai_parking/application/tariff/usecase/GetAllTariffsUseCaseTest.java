@@ -32,16 +32,11 @@ class GetAllTariffsUseCaseTest {
     @Test
     @DisplayName("Debe retornar todas las tarifas")
     void shouldGetAllTariffs() {
-        // QUE HACE:
-        // Simula la obtención de todas las tarifas de la BD
         Tariff tariff = Tariff.reconstruct(UUID.randomUUID(), "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         when(tariffPersistence.findAll()).thenReturn(List.of(tariff));
 
         List<TariffDTO> result = getAllTariffsUseCase.execute();
-
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve la lista con todas las tarifas
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
@@ -51,14 +46,10 @@ class GetAllTariffsUseCaseTest {
     @Test
     @DisplayName("Debe retornar lista vacía si no hay tarifas")
     void shouldReturnEmptyListWhenNoTariffsExist() {
-        // QUE HACE:
-        // Simula que la base de datos no tiene tarifas
         when(tariffPersistence.findAll()).thenReturn(List.of());
 
         List<TariffDTO> result = getAllTariffsUseCase.execute();
 
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve una lista vacía
         assertEquals(0, result.size());
         verify(tariffPersistence).findAll();
     }

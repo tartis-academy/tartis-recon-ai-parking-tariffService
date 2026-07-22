@@ -36,8 +36,6 @@ class DeactivateTariffUseCaseTest {
     @Test
     @DisplayName("Debe desactivar una tarifa existente")
     void shouldDeactivateTariff() {
-        // QUE HACE:
-        // Configura un UUID y simula la existencia de una tarifa activa
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
@@ -45,9 +43,6 @@ class DeactivateTariffUseCaseTest {
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TariffDTO result = deactivateTariffUseCase.execute(id);
-
-        // QUE DEBERIA HACER:
-        // Verificar que la tarifa devuelta está desactivada y se guardó en BD
 
         assertNotNull(result);
         assertFalse(result.isActive());
@@ -57,13 +52,9 @@ class DeactivateTariffUseCaseTest {
     @Test
     @DisplayName("Debe lanzar excepcion si la tarifa no existe")
     void shouldThrowExceptionWhenTariffNotFound() {
-        // QUE HACE:
-        // Simula que la tarifa no existe
         UUID id = UUID.randomUUID();
         when(tariffPersistence.findById(id)).thenReturn(Optional.empty());
 
-        // QUE DEBERIA HACER:
-        // Verificar que se lanza TariffNotFoundException
         assertThrows(TariffNotFoundException.class, () -> deactivateTariffUseCase.execute(id));
     }
 }

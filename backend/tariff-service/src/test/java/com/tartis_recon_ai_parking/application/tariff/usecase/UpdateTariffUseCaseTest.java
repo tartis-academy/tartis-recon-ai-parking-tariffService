@@ -37,8 +37,6 @@ class UpdateTariffUseCaseTest {
     @Test
     @DisplayName("Debe actualizar una tarifa exitosamente")
     void shouldUpdateTariff() {
-        // QUE HACE:
-        // Simula la existencia de una tarifa y su actualización con nuevos datos
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
@@ -47,9 +45,6 @@ class UpdateTariffUseCaseTest {
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TariffDTO result = updateTariffUseCase.execute(id, updateDto);
-
-        // QUE DEBERIA HACER:
-        // Verificar que la tarifa se actualiza correctamente y se persiste
 
         assertNotNull(result);
         assertEquals("Premium", result.getName());
@@ -62,15 +57,11 @@ class UpdateTariffUseCaseTest {
     @Test
     @DisplayName("Debe lanzar excepcion si la tarifa a actualizar no existe")
     void shouldThrowExceptionWhenTariffNotFound() {
-        // QUE HACE:
-        // Simula que la tarifa a actualizar no existe
         UUID id = UUID.randomUUID();
         TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         
         when(tariffPersistence.findById(id)).thenReturn(Optional.empty());
 
-        // QUE DEBERIA HACER:
-        // Verificar que se lanza TariffNotFoundException
         assertThrows(TariffNotFoundException.class, () -> updateTariffUseCase.execute(id, updateDto));
     }
 }

@@ -35,17 +35,12 @@ class GetTariffUseCaseTest {
     @Test
     @DisplayName("Debe retornar una tarifa por su ID")
     void shouldGetTariffById() {
-        // QUE HACE:
-        // Simula la obtención de una tarifa por su ID
         UUID id = UUID.randomUUID();
         Tariff tariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(tariff));
 
         TariffDTO result = getTariffUseCase.execute(id);
-
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve la tarifa correspondiente
 
         assertNotNull(result);
         assertEquals(id, result.getUniqueId());
@@ -56,13 +51,9 @@ class GetTariffUseCaseTest {
     @Test
     @DisplayName("Debe lanzar excepcion si la tarifa no existe")
     void shouldThrowExceptionWhenTariffNotFound() {
-        // QUE HACE:
-        // Simula que la tarifa no existe
         UUID id = UUID.randomUUID();
         when(tariffPersistence.findById(id)).thenReturn(Optional.empty());
 
-        // QUE DEBERIA HACER:
-        // Verificar que se lanza TariffNotFoundException
         assertThrows(TariffNotFoundException.class, () -> getTariffUseCase.execute(id));
     }
 }

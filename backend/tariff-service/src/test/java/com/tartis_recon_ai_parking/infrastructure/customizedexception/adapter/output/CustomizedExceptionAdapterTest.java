@@ -19,15 +19,11 @@ class CustomizedExceptionAdapterTest {
     @Test
     @DisplayName("Debe manejar TariffNotFoundException retornando 404 Not Found")
     void shouldHandleTariffNotFoundException() {
-        // QUE HACE:
-        // Configura un UUID y genera una TariffNotFoundException
         UUID id = UUID.randomUUID();
         TariffNotFoundException exception = new TariffNotFoundException(id);
 
         ResponseEntity<ErrorResponse> response = exceptionAdapter.handleTariffNotFound(exception);
 
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve 404 Not Found y el ErrorResponse mapeado correctamente
 
         assertNotNull(response);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -40,14 +36,11 @@ class CustomizedExceptionAdapterTest {
     @Test
     @DisplayName("Debe manejar InvalidTariffException retornando 400 Bad Request")
     void shouldHandleInvalidTariffException() {
-        // QUE HACE:
         // Genera una InvalidTariffException con un mensaje de error
         InvalidTariffException exception = new InvalidTariffException("Invalid tariff data");
 
         ResponseEntity<ErrorResponse> response = exceptionAdapter.handleInvalidTariff(exception);
 
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve 400 Bad Request y el ErrorResponse mapeado correctamente
 
         assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());

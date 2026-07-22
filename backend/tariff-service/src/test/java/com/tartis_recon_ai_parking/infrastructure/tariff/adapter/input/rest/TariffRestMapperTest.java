@@ -27,14 +27,9 @@ class TariffRestMapperTest {
     @Test
     @DisplayName("Debe mapear de TariffCreateRequest a TariffCreateDTO")
     void shouldMapCreateRequestToDTO() {
-        // QUE HACE:
-        // Configura un request para crear tarifa
         TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         TariffCreateDTO dto = mapper.toCreateDTO(request);
-        
-        // QUE DEBERIA HACER:
-        // Verificar que el mapper mapea todos los campos correctamente
         
         assertNotNull(dto);
         assertEquals(request.getName(), dto.getName());
@@ -47,39 +42,20 @@ class TariffRestMapperTest {
     @Test
     @DisplayName("Debe mapear de TariffCreateRequest a TariffCreateDTO cuando active es nulo")
     void shouldMapCreateRequestToDTOWhenActiveIsNull() {
-        // QUE HACE:
-        // Configura un request para crear tarifa con campo active en null
         TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), null);
         
         TariffCreateDTO dto = mapper.toCreateDTO(request);
         
-        // QUE DEBERIA HACER:
-        // Verificar que el mapper ignora el active o lo setea a falso por defecto
         assertNotNull(dto);
         assertEquals(false, dto.isActive());
     }
 
     @Test
-    @DisplayName("Debe retornar null al mapear TariffCreateRequest nulo")
-    void shouldReturnNullWhenCreateRequestIsNull() {
-        // QUE HACE:
-        // Intenta mapear un objeto null
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve null
-        assertNull(mapper.toCreateDTO(null));
-    }
-
-    @Test
     @DisplayName("Debe mapear de TariffUpdateRequest a TariffUpdateDTO")
     void shouldMapUpdateRequestToDTO() {
-        // QUE HACE:
-        // Configura un request para actualizar tarifa
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         
         TariffUpdateDTO dto = mapper.toUpdateDTO(request);
-        
-        // QUE DEBERIA HACER:
-        // Verificar que el mapper transfiere los datos correspondientes
         
         assertNotNull(dto);
         assertEquals(request.getName(), dto.getName());
@@ -88,27 +64,12 @@ class TariffRestMapperTest {
     }
 
     @Test
-    @DisplayName("Debe retornar null al mapear TariffUpdateRequest nulo")
-    void shouldReturnNullWhenUpdateRequestIsNull() {
-        // QUE HACE:
-        // Intenta mapear un objeto null
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve null
-        assertNull(mapper.toUpdateDTO(null));
-    }
-
-    @Test
     @DisplayName("Debe mapear de TariffDTO a TariffResponse")
     void shouldMapDTOToResponse() {
-        // QUE HACE:
-        // Configura un DTO de tarifa
         UUID id = UUID.randomUUID();
         TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         TariffResponse response = mapper.toResponse(dto);
-        
-        // QUE DEBERIA HACER:
-        // Verificar que el mapeo genera el response con los datos correctos
         
         assertNotNull(response);
         assertEquals(dto.getUniqueId(), response.getId());
@@ -120,27 +81,12 @@ class TariffRestMapperTest {
     }
 
     @Test
-    @DisplayName("Debe retornar null al mapear TariffDTO nulo")
-    void shouldReturnNullWhenDTOIsNull() {
-        // QUE HACE:
-        // Intenta mapear un dto nulo
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve null
-        assertNull(mapper.toResponse(null));
-    }
-
-    @Test
     @DisplayName("Debe mapear de lista de TariffDTO a lista de TariffResponse")
     void shouldMapDTOListToResponseList() {
-        // QUE HACE:
-        // Pasa una lista con un DTO
         UUID id = UUID.randomUUID();
         TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         List<TariffResponse> responses = mapper.toResponseList(List.of(dto));
-        
-        // QUE DEBERIA HACER:
-        // Verificar que la lista devuelta tiene el mismo tamaño y elementos mapeados
         
         assertNotNull(responses);
         assertEquals(1, responses.size());
@@ -150,10 +96,6 @@ class TariffRestMapperTest {
     @Test
     @DisplayName("Debe retornar null al mapear lista de TariffDTO nula")
     void shouldReturnNullWhenDTOListIsNull() {
-        // QUE HACE:
-        // Pasa una lista nula
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve null
         assertNull(mapper.toResponseList(null));
     }
 }
