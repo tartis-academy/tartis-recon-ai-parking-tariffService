@@ -14,7 +14,6 @@ public class Tariff {
     private BigDecimal pricePerMinute;
     private BigDecimal basePrice;
     private boolean active;
-    private boolean cochaso;
 
     public static Tariff create(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
         return new Tariff(UUID.randomUUID(), name, type, pricePerMinute, basePrice, active);
