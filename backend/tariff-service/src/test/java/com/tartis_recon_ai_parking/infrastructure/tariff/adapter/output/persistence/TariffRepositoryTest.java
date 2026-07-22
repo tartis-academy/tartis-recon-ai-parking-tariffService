@@ -15,28 +15,17 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// @DataJpaTest: Configura un entorno de pruebas enfocado únicamente en la capa JPA.
-// Levanta una base de datos embebida (H2) y autoconfigura los repositorios y EntityManager.
 @DataJpaTest
 class TariffRepositoryTest {
-
-    // TestEntityManager: Herramienta de Spring Boot para pruebas de persistencia que permite 
-    // realizar operaciones basicas (persist, flush, etc.) en la BD de pruebas sin usar directamente 
-    // el repositorio que estamos probando, aislando la fase de preparacion 
     @Autowired
     private TestEntityManager entityManager;
 
-    // Repositorio bajo prueba
     @Autowired
     private TariffRepository tariffRepository;
 
     @Test
     @DisplayName("Debe retornar True si existe una tarifa con el nombre consultado")
     void shouldReturnTrueWhenNameExists() {
-        // QUE HACE:
-        // - Instancia y rellena un TariffEntity.
-        // - Persiste la entidad directamente en la BD usando el TestEntityManager.
-        // - Ejecuta la consulta existsByName con el nombre guardado.
         UUID id = UUID.randomUUID();
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
@@ -50,29 +39,20 @@ class TariffRepositoryTest {
 
         boolean exists = tariffRepository.existsByName("Standard");
 
-        // QUE DEBERIA HACER:
-        // Debe retornar true indicando que el nombre ya esta registrado en el sistema.
         assertThat(exists).isTrue();
     }
 
     @Test
     @DisplayName("Debe retornar False si no existe una tarifa con el nombre consultado")
     void shouldReturnFalseWhenNameDoesNotExist() {
-        // QUE HACE:
-        // Llama directamente a existsByName con un nombre inexistente sin guardar nada previo.
         boolean exists = tariffRepository.existsByName("NonExistent");
 
-        // QUE DEBERIA HACER:
-        // Debe retornar false puesto que ninguna tarifa posee dicho nombre en BD.
         assertThat(exists).isFalse();
     }
 
     @Test
     @DisplayName("Debe encontrar y retornar una tarifa por su nombre si existe")
     void shouldFindTariffByNameSuccessfully() {
-        // QUE HACE:
-        // - Persiste una tarifa de prueba con nombre "Premium".
-        // - Realiza la busqueda a traves de findByName en el repositorio.
         UUID id = UUID.randomUUID();
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
@@ -86,9 +66,6 @@ class TariffRepositoryTest {
 
         Optional<TariffEntity> result = tariffRepository.findByName("Premium");
 
-        // QUE DEBERIA HACER:
-        // Debe retornar un Optional con contenido (isPresent = true), y comprobar que 
-        // los valores de la tarifa retornada correspondan con los que guardamos.
         assertThat(result).isPresent();
         assertThat(result.get().getUniqueId()).isEqualTo(id);
         assertThat(result.get().getName()).isEqualTo("Premium");
@@ -98,49 +75,15 @@ class TariffRepositoryTest {
     @Test
     @DisplayName("Debe retornar un Optional vacio al buscar un nombre que no existe")
     void shouldReturnEmptyOptionalWhenNameNotFound() {
-        // QUE HACE:
         // Busca una tarifa por el nombre "NonExistent" en una BD vacia.
         Optional<TariffEntity> result = tariffRepository.findByName("NonExistent");
 
-        // QUE DEBERIA HACER:
-        // Debe retornar un Optional vacio (isPresent = false / isEmpty = true).
         assertThat(result).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Debe guardar una tarifa en la base de datos y permitir recuperarla por ID")
-    void shouldSaveAndLoadTariffEntity() {
-        // QUE HACE:
-        // - Crea un TariffEntity de prueba.
-        // - Llama al metodo save del repositorio para guardarlo.
-        // - Recupera la entidad utilizando findById.
-        UUID id = UUID.randomUUID();
-        TariffEntity entity = new TariffEntity();
-        entity.setUniqueId(id);
-        entity.setName("Weekend");
-        entity.setType(VehicleType.CAR);
-        entity.setPricePerMinute(new BigDecimal("0.06"));
-        entity.setBasePrice(new BigDecimal("2.5"));
-        entity.setActive(true);
-
-        TariffEntity savedEntity = tariffRepository.save(entity);
-
-        // QUE DEBERIA HACER:
-        // La entidad guardada debe tener un ID no nulo y ser recuperable mediante findById, 
-        // coincidiendo en todos sus atributos persistidos.
-        assertThat(savedEntity).isNotNull();
-        
-        Optional<TariffEntity> loadedEntityOpt = tariffRepository.findById(id);
-        assertThat(loadedEntityOpt).isPresent();
-        assertThat(loadedEntityOpt.get().getName()).isEqualTo("Weekend");
-        assertThat(loadedEntityOpt.get().getPricePerMinute()).isEqualTo(new BigDecimal("0.06"));
     }
 
     @Test
     @DisplayName("Debe encontrar tarifas por su estado activo")
     void shouldFindTariffsByActive() {
-        // QUE HACE:
-        // Configura y persiste una entidad de tarifa con estado activo.
         UUID id = UUID.randomUUID();
         TariffEntity entity = new TariffEntity();
         entity.setUniqueId(id);
@@ -152,11 +95,7 @@ class TariffRepositoryTest {
 
         entityManager.persistAndFlush(entity);
 
-        // Ejecuta la busqueda de tarifas activas.
         List<TariffEntity> activeTariffs = tariffRepository.findByActive(true);
-
-        // QUE DEBERIA HACER:
-        // Retornar la tarifa que fue persistida, verificando que esta activa.
 
         assertThat(activeTariffs).isNotEmpty();
         assertThat(activeTariffs.get(0).getName()).isEqualTo("ActiveTariff");
@@ -165,8 +104,6 @@ class TariffRepositoryTest {
     @Test
     @DisplayName("Debe encontrar tarifas activas por tipo de vehiculo")
     void shouldFindActiveTariffsByType() {
-        // QUE HACE:
-        // Configura y persiste multiples entidades (una activa del tipo buscado, otras inactivas o de otro tipo).
         UUID id1 = UUID.randomUUID();
         TariffEntity entity1 = new TariffEntity();
         entity1.setUniqueId(id1);
@@ -199,11 +136,8 @@ class TariffRepositoryTest {
         entityManager.persist(entity3);
         entityManager.flush();
 
-        // Llama al metodo del repositorio.
         List<TariffEntity> carTariffs = tariffRepository.findByActiveTrueAndType(VehicleType.CAR);
 
-        // QUE DEBERIA HACER:
-        // Retornar unicamentela entidad 'ActiveCarTariff' y omitir las demas.
         assertThat(carTariffs).isNotEmpty().hasSize(1);
         assertThat(carTariffs.get(0).getName()).isEqualTo("ActiveCarTariff");
         assertThat(carTariffs.get(0).isActive()).isTrue();

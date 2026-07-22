@@ -13,13 +13,9 @@ class TariffNotFoundExceptionTest {
     @Test
     @DisplayName("Debe crear la excepcion TariffNotFoundException con el mensaje correcto")
     void shouldCreateExceptionWithMessage() {
-        // QUE HACE:
-        // Instancia la excepcion usando el constructor que recibe un UUID
         UUID id = UUID.randomUUID();
         TariffNotFoundException exception = new TariffNotFoundException(id);
 
-        // QUE DEBERIA HACER:
-        // La excepcion no debe ser nula y el mensaje debe contener el UUID proporcionado
         assertNotNull(exception);
         assertEquals("Tariff not found with id: " + id, exception.getMessage());
     }
@@ -27,12 +23,8 @@ class TariffNotFoundExceptionTest {
     @Test
     @DisplayName("Debe crear la excepcion TariffNotFoundException con un mensaje de texto plano")
     void shouldCreateExceptionWithStringMessage() {
-        // QUE HACE:
-        // Instancia la excepcion usando el constructor que recibe un String
         TariffNotFoundException exception = new TariffNotFoundException("Custom error");
 
-        // QUE DEBERIA HACER:
-        // La excepcion no debe ser nula y el mensaje debe contener el texto proporcionado
         assertNotNull(exception);
         assertEquals("Custom error", exception.getMessage());
     }

@@ -32,16 +32,11 @@ class GetActiveTariffUseCaseTest {
     @Test
     @DisplayName("Debe retornar las tarifas activas por tipo de vehiculo")
     void shouldGetActiveTariffs() {
-        // QUE HACE:
-        // Simula la obtención de tarifas activas para tipo CAR
         Tariff tariff = Tariff.reconstruct(UUID.randomUUID(), "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(tariff));
 
         List<TariffDTO> result = getActiveTariffUseCase.execute(VehicleType.CAR);
-
-        // QUE DEBERIA HACER:
-        // Verificar que devuelve la lista con la tarifa CAR activa
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());

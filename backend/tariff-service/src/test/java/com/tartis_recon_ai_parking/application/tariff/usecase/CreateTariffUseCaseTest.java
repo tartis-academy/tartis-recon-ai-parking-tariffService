@@ -36,8 +36,6 @@ class CreateTariffUseCaseTest {
     @Test
     @DisplayName("Debe crear una tarifa exitosamente")
     void shouldCreateTariff() {
-        // QUE HACE:
-        // Crea un DTO con datos de nueva tarifa y simula el guardado exitoso
         TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         UUID expectedId = UUID.randomUUID();
@@ -46,9 +44,6 @@ class CreateTariffUseCaseTest {
         when(tariffPersistence.save(any(Tariff.class))).thenReturn(savedTariff);
 
         TariffDTO result = createTariffUseCase.execute(createDto);
-
-        // QUE DEBERIA HACER:
-        // Verificar que la tarifa devuelta contiene el UUID y datos persistidos
 
         assertNotNull(result);
         assertEquals(expectedId, result.getUniqueId());
@@ -61,12 +56,8 @@ class CreateTariffUseCaseTest {
     @Test
     @DisplayName("Debe lanzar InvalidTariffException al crear una tarifa con datos invalidos")
     void shouldThrowExceptionWhenCreatingWithInvalidData() {
-        // QUE HACE:
-        // Crea un DTO con datos invalidos (precio negativo) y ejecuta el caso de uso
         TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("2.0"), true);
         
-        // QUE DEBERIA HACER:
-        // Verificar que lanza InvalidTariffException y que no interactua con persistencia
         assertThrows(InvalidTariffException.class, () -> createTariffUseCase.execute(createDto));
         
         verify(tariffPersistence, never()).save(any(Tariff.class));

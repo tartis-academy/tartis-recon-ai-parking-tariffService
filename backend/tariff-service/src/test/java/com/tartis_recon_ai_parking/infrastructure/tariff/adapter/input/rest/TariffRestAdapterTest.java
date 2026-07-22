@@ -68,8 +68,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe retornar la lista de tarifas activas filtradas por tipo de vehiculo")
     void shouldGetActiveTariffs() throws Exception {
-        // QUE HACE:
-        // Configura los mocks para devolver una lista con un TariffDTO simulado.
         UUID id = UUID.randomUUID();
         TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         TariffResponse response = new TariffResponse(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
@@ -77,12 +75,9 @@ class TariffRestAdapterTest {
         when(getActiveTariffUseCase.execute(VehicleType.CAR)).thenReturn(List.of(dto));
         when(mapper.toResponseList(List.of(dto))).thenReturn(List.of(response));
 
-        // Ejecuta la petición GET al endpoint con el query param "type"
         mockMvc.perform(get("/v1/tariffs/active")
                 .param("type", "CAR")
                 .contentType(MediaType.APPLICATION_JSON))
-                // QUE DEBERIA HACER:
-                // Verificar que el estado es 200 OK y que la respuesta contiene la lista esperada
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id.toString()))
                 .andExpect(jsonPath("$[0].name").value("Standard"));
@@ -93,8 +88,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe retornar la lista de todas las tarifas")
     void shouldGetAllTariffs() throws Exception {
-        // QUE HACE:
-        // Configura los mocks para devolver una lista de todas las tarifas disponibles.
         UUID id = UUID.randomUUID();
         TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         TariffResponse response = new TariffResponse(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
@@ -104,8 +97,6 @@ class TariffRestAdapterTest {
 
         mockMvc.perform(get("/v1/tariffs")
                 .contentType(MediaType.APPLICATION_JSON))
-                // QUE DEBERIA HACER:
-                // Verificar que el estado es 200 OK y que la respuesta contiene la lista de tarifas.
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id.toString()))
                 .andExpect(jsonPath("$[0].name").value("Standard"));
@@ -116,8 +107,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe retornar una tarifa especifica por su ID")
     void shouldGetTariffById() throws Exception {
-        // QUE HACE:
-        // Configura los mocks para devolver una tarifa especifica en base a su ID.
         UUID id = UUID.randomUUID();
         TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         TariffResponse response = new TariffResponse(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
@@ -127,8 +116,6 @@ class TariffRestAdapterTest {
 
         mockMvc.perform(get("/v1/tariffs/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON))
-                // QUE DEBERIA HACER:
-                // Verificar que el estado es 200 OK y que devuelve los datos correctos de la tarifa solicitada.
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Standard"));
@@ -139,8 +126,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe crear una tarifa retornando el codigo 201 CREATED")
     void shouldCreateTariff() throws Exception {
-        // QUE HACE:
-        // Configura los mocks para simular la creacion exitosa de una nueva tarifa desde el payload.
         UUID id = UUID.randomUUID();
         TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
@@ -154,8 +139,6 @@ class TariffRestAdapterTest {
         mockMvc.perform(post("/v1/tariffs")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 201 Created y los datos asignados a la nueva tarifa.
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Standard"));
@@ -166,8 +149,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe actualizar una tarifa correctamente devolviendo 200 OK")
     void shouldUpdateTariff() throws Exception {
-        // QUE HACE:
-        // Configura los mocks para simular la actualizacion de una tarifa existente usando su ID y un payload.
         UUID id = UUID.randomUUID();
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0")); 
@@ -181,8 +162,6 @@ class TariffRestAdapterTest {
         mockMvc.perform(put("/v1/tariffs/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 200 OK y la tarifa con sus valores actualizados.
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Premium"));
@@ -193,8 +172,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe activar una tarifa al recibir status request true")
     void shouldActivateTariffStatus() throws Exception {
-        // QUE HACE:
-        // Simula la llamada de activacion enviando un booleano en el body para cambiar su estado a activo.
         UUID id = UUID.randomUUID();
         TariffStatusRequest request = new TariffStatusRequest(true);
         TariffDTO activatedDto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
@@ -206,8 +183,6 @@ class TariffRestAdapterTest {
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 200 OK y el estado activo cambiado a verdadero.
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(true));
                 
@@ -217,8 +192,6 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("Debe desactivar una tarifa al recibir status request false")
     void shouldDeactivateTariffStatus() throws Exception {
-        // QUE HACE:
-        // Simula la llamada de desactivacion enviando un booleano false para inhabilitarla.
         UUID id = UUID.randomUUID();
         TariffStatusRequest request = new TariffStatusRequest(false);
         TariffDTO deactivatedDto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
@@ -230,8 +203,6 @@ class TariffRestAdapterTest {
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 200 OK y que el estado activo es falso.
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
                 
@@ -241,15 +212,12 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("POST /v1/tariffs - Debe retornar 400 cuando el payload es invalido")
     void shouldReturn400OnCreateWithInvalidData() throws Exception {
-        // QUE HACE:
         // Enviar request con precio negativo (violando @DecimalMin)
         TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("2.0"), true);
 
         mockMvc.perform(post("/v1/tariffs")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 400 Bad Request
                 .andExpect(status().isBadRequest());
     }
 
@@ -257,15 +225,12 @@ class TariffRestAdapterTest {
     @DisplayName("PUT /v1/tariffs/{id} - Debe retornar 400 cuando el payload es invalido")
     void shouldReturn400OnUpdateWithInvalidData() throws Exception {
         UUID id = UUID.randomUUID();
-        // QUE HACE:
         // Request con nombre vacio (violando @NotBlank)
         TariffUpdateRequest request = new TariffUpdateRequest("", new BigDecimal("0.05"), new BigDecimal("2.0"));
 
         mockMvc.perform(put("/v1/tariffs/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 400 Bad Request
                 .andExpect(status().isBadRequest());
     }
 
@@ -273,38 +238,28 @@ class TariffRestAdapterTest {
     @DisplayName("PATCH /v1/tariffs/{id}/status - Debe retornar 400 cuando el payload es invalido")
     void shouldReturn400OnStatusChangeWithInvalidData() throws Exception {
         UUID id = UUID.randomUUID();
-        // QUE HACE:
-        // Request con active nulo (violando @NotNull)
         TariffStatusRequest request = new TariffStatusRequest(null);
 
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 400 Bad Request
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("GET /v1/tariffs/{id} - Debe retornar 404 cuando la tarifa no existe")
     void shouldReturn404OnGetNonExistentTariff() throws Exception {
-        // QUE HACE:
-        // Configura el mock para lanzar TariffNotFoundException
         UUID id = UUID.randomUUID();
         when(getTariffUseCase.execute(id)).thenThrow(new com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException(id));
 
         mockMvc.perform(get("/v1/tariffs/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 404 Not Found
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("PUT /v1/tariffs/{id} - Debe retornar 404 cuando la tarifa no existe")
     void shouldReturn404OnUpdateNonExistentTariff() throws Exception {
-        // QUE HACE:
-        // Configura el mock para lanzar TariffNotFoundException al actualizar
         UUID id = UUID.randomUUID();
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
@@ -315,8 +270,6 @@ class TariffRestAdapterTest {
         mockMvc.perform(put("/v1/tariffs/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // QUE DEBERIA HACER:
-                // Verificar que devuelve codigo 404 Not Found
                 .andExpect(status().isNotFound());
     }
 }
