@@ -45,6 +45,21 @@ class TariffRestMapperTest {
     }
 
     @Test
+    @DisplayName("Debe mapear de TariffCreateRequest a TariffCreateDTO cuando active es nulo")
+    void shouldMapCreateRequestToDTOWhenActiveIsNull() {
+        // QUE HACE:
+        // Configura un request para crear tarifa con campo active en null
+        TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), null);
+        
+        TariffCreateDTO dto = mapper.toCreateDTO(request);
+        
+        // QUE DEBERIA HACER:
+        // Verificar que el mapper ignora el active o lo setea a falso por defecto
+        assertNotNull(dto);
+        assertEquals(false, dto.isActive());
+    }
+
+    @Test
     @DisplayName("Debe retornar null al mapear TariffCreateRequest nulo")
     void shouldReturnNullWhenCreateRequestIsNull() {
         // QUE HACE:

@@ -96,5 +96,6 @@ class TariffPersistenceMapperTest {
         // QUE DEBERIA HACER:
         // El mapper debe retornar null de forma segura y sin lanzar excepciones.
         assertThat(tariff).isNull();
+        assertThat(mapper.create(null)).isNull();
     }
 }
