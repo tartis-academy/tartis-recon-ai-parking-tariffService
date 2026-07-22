@@ -1,5 +1,9 @@
 package com.tartis_recon_ai_parking.application.tariff.usecase;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
@@ -16,7 +20,6 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 

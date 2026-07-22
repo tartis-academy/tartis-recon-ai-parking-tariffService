@@ -1,5 +1,9 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffCreateDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffUpdateDTO;
@@ -15,7 +19,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class TariffRestMapperTest {
 

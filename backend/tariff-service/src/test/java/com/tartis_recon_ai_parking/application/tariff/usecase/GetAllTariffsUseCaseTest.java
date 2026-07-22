@@ -48,4 +48,18 @@ class GetAllTariffsUseCaseTest {
         
         verify(tariffPersistence).findAll();
     }
+    @Test
+    @DisplayName("Debe retornar lista vacía si no hay tarifas")
+    void shouldReturnEmptyListWhenNoTariffsExist() {
+        // QUE HACE:
+        // Simula que la base de datos no tiene tarifas
+        when(tariffPersistence.findAll()).thenReturn(List.of());
+
+        List<TariffDTO> result = getAllTariffsUseCase.execute();
+
+        // QUE DEBERIA HACER:
+        // Verificar que devuelve una lista vacía
+        assertEquals(0, result.size());
+        verify(tariffPersistence).findAll();
+    }
 }
