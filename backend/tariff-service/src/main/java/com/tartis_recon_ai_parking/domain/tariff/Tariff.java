@@ -15,6 +15,7 @@ public class Tariff {
     private BigDecimal basePrice;
     private boolean active;
 
+    
     public static Tariff create(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
         return new Tariff(UUID.randomUUID(), name, type, pricePerMinute, basePrice, active);
     }
@@ -27,6 +28,7 @@ public class Tariff {
 
         validateData(name, type, pricePerMinute, basePrice);
         
+        //Data assignation.
         this.uniqueId = id;
         this.name = name;
         this.type = type;
