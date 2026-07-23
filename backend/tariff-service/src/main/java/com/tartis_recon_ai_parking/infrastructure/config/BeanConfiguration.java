@@ -1,5 +1,6 @@
 package com.tartis_recon_ai_parking.infrastructure.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.application.tariff.usecase.ActivateTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.CreateTariffUseCase;
@@ -13,6 +14,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class BeanConfiguration {
+
+    // Necesario: en este proyecto JacksonAutoConfiguration no registra un
+    // ObjectMapper para el contexto de TariffRestAdapterTest (@SpringBootTest),
+    // que lo autoinyecta para serializar los request bodies del MockMvc.
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper().findAndRegisterModules();
+    }
 
     @Bean
     public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence) {
