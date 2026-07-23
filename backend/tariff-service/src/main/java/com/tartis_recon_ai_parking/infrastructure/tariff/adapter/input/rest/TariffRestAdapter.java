@@ -115,9 +115,9 @@ public class TariffRestAdapter {
     public ResponseEntity<TariffResponse> calculatePrice(@RequestBody PriceRequest request) {
         
         //PriceTransferDTO = priceCalculator.execute(request.getVehicleType(), request.getMinutes());
+
         
-        
-        return entity;
+        return null;
     }
     
 }
