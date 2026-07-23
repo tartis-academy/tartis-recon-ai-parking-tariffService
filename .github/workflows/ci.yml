@@ -2,8 +2,9 @@ name: CI
 
 on:
   pull_request:
+    branches: [main, release]
   push:
-    branches: [main, release, release123]
+    branches: [main, release]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -27,7 +28,8 @@ jobs:
       #
       # Hace falta en cuanto haya un @SpringBootTest con tests activos:
       # levanta el contexto entero, JPA incluido, y sin DataSource real no
-      # arranca.
+      # arranca. Hoy TariffServiceApplicationTests tiene el @Test comentado,
+      # asi que el contexto no llega a cargarse.
       #
       # Usuario, password y base deben coincidir con las variables TARIFF_DB_*
       # del paso "Build + test", que son las que lee
