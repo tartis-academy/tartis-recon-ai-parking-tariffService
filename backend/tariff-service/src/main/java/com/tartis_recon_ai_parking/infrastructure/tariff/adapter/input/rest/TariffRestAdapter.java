@@ -9,10 +9,13 @@ import com.tartis_recon_ai_parking.application.tariff.usecase.GetAllTariffsUseCa
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
+import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.PriceRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffCreateRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffStatusRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffUpdateRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
+
+import io.micrometer.core.ipc.http.HttpSender.Response;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -107,4 +110,14 @@ public class TariffRestAdapter {
                 : deactivateTariffUseCase.execute(id);
         return ResponseEntity.ok(mapper.toResponse(dto));
     }
+
+    @PostMapping("/calculate")
+    public ResponseEntity<TariffResponse> calculatePrice(@RequestBody PriceRequest request) {
+        
+        //PriceTransferDTO = priceCalculator.execute(request.getVehicleType(), request.getMinutes());
+        
+        
+        return entity;
+    }
+    
 }
