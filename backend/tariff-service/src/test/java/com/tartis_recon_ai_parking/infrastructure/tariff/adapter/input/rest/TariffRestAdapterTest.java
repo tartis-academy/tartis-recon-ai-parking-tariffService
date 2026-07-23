@@ -7,7 +7,6 @@ import com.tartis_recon_ai_parking.application.tariff.dto.TariffUpdateDTO;
 import com.tartis_recon_ai_parking.application.tariff.usecase.*;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffCreateRequest;
-import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffStatusRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffUpdateRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
