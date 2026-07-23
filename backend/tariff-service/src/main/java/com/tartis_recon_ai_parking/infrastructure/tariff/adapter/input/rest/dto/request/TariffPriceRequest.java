@@ -5,26 +5,26 @@ import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 
 import jakarta.validation.constraints.NotNull;
 
-public class PriceRequest {
-    
+public class TariffPriceRequest {
+
     @NotNull
     VehicleType type;
 
     @NotNull
     int minutes;
 
-    public PriceRequest() {
+    public TariffPriceRequest() {
     }
 
-    public PriceRequest(VehicleType type, int minutes) {
+    public TariffPriceRequest(VehicleType type, int minutes) {
         this.type = type;
         this.minutes = minutes;
     }
 
     public VehicleType getVehicleType() { return type; }
-    public void setName(VehicleType type) { this.type = type; }
+    public void setVehicleType(VehicleType type) { this.type = type; }
 
     public int getMinutes() { return minutes; }
-    public void setType(int minutes) { this.minutes = minutes; }
+    public void setMinutes(int minutes) { this.minutes = minutes; }
 
 }
