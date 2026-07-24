@@ -13,8 +13,7 @@ import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Constructor;
+import org.mapstruct.factory.Mappers;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -22,14 +21,7 @@ import java.util.UUID;
 
 class TariffRestMapperTest {
 
-    private final TariffRestMapper mapper;
-
-    TariffRestMapperTest() throws Exception {
-        Class<?> implClass = Class.forName(
-            "com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.TariffRestMapperImpl");
-        Constructor<?> constructor = implClass.getDeclaredConstructor();
-        mapper = (TariffRestMapper) constructor.newInstance();
-    }
+    private final TariffRestMapper mapper = Mappers.getMapper(TariffRestMapper.class);
 
     @Test
     @DisplayName("Debe mapear de TariffCreateRequest a TariffCreateDTO")

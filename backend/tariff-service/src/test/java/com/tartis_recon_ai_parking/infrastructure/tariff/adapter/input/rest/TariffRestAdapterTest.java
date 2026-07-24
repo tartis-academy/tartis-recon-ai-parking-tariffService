@@ -68,7 +68,6 @@ class TariffRestAdapterTest {
 
     @MockitoBean
     private PriceCalculateUseCase priceCalculator;
-
     @Test
     @DisplayName("Debe retornar la lista de tarifas activas filtradas por tipo de vehiculo")
     void shouldGetActiveTariffs() throws Exception {
