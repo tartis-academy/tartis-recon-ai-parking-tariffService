@@ -25,7 +25,6 @@ public class TariffCreateRequest {
 
     @NotNull
     private Boolean active;
-    // + getter/setter
 
     public TariffCreateRequest() {
     }

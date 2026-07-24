@@ -8,10 +8,15 @@ import com.tartis_recon_ai_parking.application.tariff.usecase.DeactivateTariffUs
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetActiveTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetAllTariffsUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+
+    // Necesario: en este proyecto JacksonAutoConfiguration no registra un
+    // ObjectMapper para el contexto de TariffRestAdapterTest (@SpringBootTest),
+    // que lo autoinyecta para serializar los request bodies del MockMvc.
 /**
  * ¿QUÉ ES BEAN CONFIGURATION?
  * En una arquitectura hexagonal, los casos de uso (capa de aplicacion) no deben tener dependencias 
@@ -31,9 +36,6 @@ public class BeanConfiguration {
     public ObjectMapper objectMapper() {
         return new ObjectMapper().findAndRegisterModules();
     }
-
-    // QUE HACE: Recibe mediante inyeccion de dependencias la implementacion real 
-    // del puerto de salida (TariffPersistence) y la inyecta al constructor del caso de uso.
 
     @Bean
     public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence) {
@@ -69,4 +71,10 @@ public class BeanConfiguration {
     public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence) {
         return new UpdateTariffUseCase(tariffPersistence);
     }
+
+    @Bean
+    public PriceCalculateUseCase priceCalculateUseCase(TariffPersistence tariffPersistence) {
+        return new PriceCalculateUseCase(tariffPersistence);
+    }
 }
+

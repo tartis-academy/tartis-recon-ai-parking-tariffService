@@ -5,7 +5,6 @@ import com.tartis_recon_ai_parking.application.tariff.factory.TariffDTOFactory;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GetAllTariffsUseCase {
 
@@ -18,6 +17,6 @@ public class GetAllTariffsUseCase {
     public List<TariffDTO> execute() {
         return tariffPersistence.findAll().stream()
                 .map(TariffDTOFactory::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

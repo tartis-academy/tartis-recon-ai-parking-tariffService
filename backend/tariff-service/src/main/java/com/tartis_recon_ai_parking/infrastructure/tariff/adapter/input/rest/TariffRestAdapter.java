@@ -1,5 +1,6 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest;
 
+import com.tartis_recon_ai_parking.application.tariff.dto.PriceTransferDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.usecase.ActivateTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.CreateTariffUseCase;
@@ -7,12 +8,17 @@ import com.tartis_recon_ai_parking.application.tariff.usecase.DeactivateTariffUs
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetActiveTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetAllTariffsUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
+import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffCreateRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffStatusRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffUpdateRequest;
+import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.PriceResponse;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
+
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +46,7 @@ public class TariffRestAdapter {
     private final UpdateTariffUseCase updateTariffUseCase;
     private final ActivateTariffUseCase activateTariffUseCase;
     private final DeactivateTariffUseCase deactivateTariffUseCase;
+    private final PriceCalculateUseCase priceCalculator;
     private final TariffRestMapper mapper;
 
     public TariffRestAdapter(CreateTariffUseCase createTariffUseCase,
@@ -49,6 +56,7 @@ public class TariffRestAdapter {
                               UpdateTariffUseCase updateTariffUseCase,
                               ActivateTariffUseCase activateTariffUseCase,
                               DeactivateTariffUseCase deactivateTariffUseCase,
+                              PriceCalculateUseCase priceCalculator,
                               TariffRestMapper mapper) {
         this.createTariffUseCase = createTariffUseCase;
         this.getTariffUseCase = getTariffUseCase;
@@ -57,6 +65,7 @@ public class TariffRestAdapter {
         this.updateTariffUseCase = updateTariffUseCase;
         this.activateTariffUseCase = activateTariffUseCase;
         this.deactivateTariffUseCase = deactivateTariffUseCase;
+        this.priceCalculator = priceCalculator;
         this.mapper = mapper;
     }
 
@@ -107,4 +116,13 @@ public class TariffRestAdapter {
                 : deactivateTariffUseCase.execute(id);
         return ResponseEntity.ok(mapper.toResponse(dto));
     }
+
+    @PostMapping("/calculate")
+    public ResponseEntity<PriceResponse> calculatePrice(@RequestBody TariffPriceRequest request) {
+        
+        PriceTransferDTO price = priceCalculator.execute(request.getVehicleType(), request.getMinutes());
+        
+        return ResponseEntity.ok(mapper.toResponse(price));
+    }
+    
 }
