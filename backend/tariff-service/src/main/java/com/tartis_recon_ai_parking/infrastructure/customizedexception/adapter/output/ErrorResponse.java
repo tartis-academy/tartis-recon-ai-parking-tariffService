@@ -2,27 +2,43 @@ package com.tartis_recon_ai_parking.infrastructure.customizedexception.adapter.o
 
 import java.time.Instant;
 
+/**
+ * Debe coincidir con el schema "ErrorResponse" definido en openapi.yml
+ * (timestamp, status, error, message, path).
+ */
 public class ErrorResponse {
 
-    private final int status;
-    private final String message;
     private final Instant timestamp;
+    private final int status;
+    private final String error;
+    private final String message;
+    private final String path;
 
-    public ErrorResponse(int status, String message, Instant timestamp) {
+    public ErrorResponse(int status, String error, String message, String path) {
+        this.timestamp = Instant.now();
         this.status = status;
+        this.error = error;
         this.message = message;
-        this.timestamp = timestamp;
+        this.path = path;
+    }
+
+    public Instant getTimestamp() {
+        return timestamp;
     }
 
     public int getStatus() {
         return status;
     }
 
+    public String getError() {
+        return error;
+    }
+
     public String getMessage() {
         return message;
     }
 
-    public Instant getTimestamp() {
-        return timestamp;
+    public String getPath() {
+        return path;
     }
 }
