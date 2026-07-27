@@ -5,12 +5,17 @@ import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundExcepti
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.UUID;
 
@@ -83,6 +88,84 @@ class CustomizedExceptionAdapterTest {
         assertNotNull(response.getBody());
         assertTrue(response.getBody().getMessage().contains("name"));
         assertTrue(response.getBody().getMessage().contains("must not be blank"));
+    }
+
+    @Test
+    @DisplayName("Debe manejar errores de validacion a nivel de clase/objeto (ObjectError sin campo asociado), no solo FieldErrors")
+    void shouldHandleClassLevelValidationErrors() throws NoSuchMethodException {
+        Object target = new Object();
+        BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(target, "tariffCreateRequest");
+        // ObjectError "puro": sin campo asociado, como el que produce una
+        // validacion a nivel de clase completa (ej. @ScriptAssert o un
+        // validador cruzado entre varios campos del DTO).
+        bindingResult.addError(new ObjectError("tariffCreateRequest", "basePrice must not exceed pricePerMinute limits"));
+
+        MethodParameter methodParameter = new MethodParameter(
+                CustomizedExceptionAdapterTest.class.getDeclaredMethod("shouldHandleClassLevelValidationErrors"), -1);
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleValidation(exception, requestTo("/v1/tariffs"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        // Antes de la correccion, este mensaje se perdia y caia en el
+        // texto generico "Invalid request payload." porque getFieldErrors()
+        // ignora los ObjectError sin campo asociado.
+        assertTrue(response.getBody().getMessage().contains("basePrice must not exceed pricePerMinute limits"));
+    }
+
+    @Test
+    @DisplayName("Debe manejar un body JSON malformado o con un valor de enum no reconocido devolviendo 400, no el catch-all de 500")
+    void shouldHandleMalformedRequestBody() {
+        HttpMessageNotReadableException exception =
+                new HttpMessageNotReadableException(
+                        "JSON parse error: Cannot deserialize value of type VehicleType from String \"BUS\"",
+                        (HttpInputMessage) null);
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleMalformedRequest(exception, requestTo("/v1/tariffs"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("BAD_REQUEST", response.getBody().getError());
+        // El mensaje debe ser propio, sin filtrar el detalle crudo de Jackson.
+        assertTrue(!response.getBody().getMessage().contains("Jackson"));
+    }
+
+    @Test
+    @DisplayName("Debe manejar un path variable o query param con tipo incorrecto (ej. UUID mal formado) devolviendo 400, no el catch-all de 500")
+    void shouldHandleTypeMismatch() throws NoSuchMethodException {
+        MethodParameter methodParameter = new MethodParameter(
+                CustomizedExceptionAdapterTest.class.getDeclaredMethod("shouldHandleTypeMismatch"), -1);
+        MethodArgumentTypeMismatchException exception =
+                new MethodArgumentTypeMismatchException("not-a-uuid", java.util.UUID.class, "id", methodParameter, new IllegalArgumentException());
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleTypeMismatch(exception, requestTo("/v1/tariffs/not-a-uuid"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().getMessage().contains("id"));
+        assertTrue(response.getBody().getMessage().contains("UUID"));
+    }
+
+    @Test
+    @DisplayName("Debe manejar un query param obligatorio ausente devolviendo 400, no el catch-all de 500")
+    void shouldHandleMissingParameter() {
+        MissingServletRequestParameterException exception =
+                new MissingServletRequestParameterException("type", "VehicleType");
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleMissingParameter(exception, requestTo("/v1/tariffs/active"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("BAD_REQUEST", response.getBody().getError());
     }
 
     @Test

@@ -7,10 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -39,11 +43,16 @@ public class CustomizedExceptionAdapter {
     /**
      * Falla la validacion de un @Valid @RequestBody (ej. un TariffCreateRequest
      * con un campo obligatorio ausente o invalido desde el panel de admin).
+     *
+     * Usa getAllErrors() (no solo getFieldErrors()) para no perder los
+     * errores de validacion a nivel de clase/objeto completo (ObjectError
+     * sin campo asociado), que con getFieldErrors() quedaban descartados
+     * y caian en el mensaje generico de respaldo.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::formatFieldError)
+        String message = ex.getBindingResult().getAllErrors().stream()
+                .map(this::formatValidationError)
                 .collect(Collectors.joining("; "));
 
         if (message.isBlank()) {
@@ -51,6 +60,42 @@ public class CustomizedExceptionAdapter {
         }
 
         return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    /**
+     * Cuerpo de la peticion no legible: JSON mal formado, o un valor que
+     * no se puede deserializar al tipo esperado (ej. un VehicleType que
+     * no existe en el enum, como "type": "BUS"). Sin este handler, Spring
+     * lo dejaba caer en el catch-all de Exception -> 500, ocultando que
+     * el problema es del payload enviado por el cliente, no del servidor.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "The request body is missing, malformed, or contains a value that cannot be parsed (e.g. an unrecognized value for an enum field).",
+                request);
+    }
+
+    /**
+     * Un parametro de ruta o de query no tiene el tipo esperado (ej. un
+     * UUID mal formado en /v1/tariffs/{id}, o un VehicleType invalido en
+     * ?type=). Mismo motivo que el handler anterior: sin esto caia en el
+     * catch-all como 500 en vez de 400.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "expected type";
+        String message = "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "'. Expected " + requiredType + ".";
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    /**
+     * Falta un query param obligatorio (ej. GET /v1/tariffs/active sin
+     * ?type=).
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     /**
@@ -67,8 +112,11 @@ public class CustomizedExceptionAdapter {
                 "An unexpected error occurred. Please try again later.", request);
     }
 
-    private String formatFieldError(FieldError fieldError) {
-        return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+    private String formatValidationError(ObjectError error) {
+        if (error instanceof FieldError fieldError) {
+            return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+        }
+        return error.getObjectName() + ": " + error.getDefaultMessage();
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
