@@ -15,7 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConcurrentModificationException;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +39,17 @@ public class CustomizedExceptionAdapter {
     public ResponseEntity<ErrorResponse> handleInvalidTariff(InvalidTariffException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
+     /**
+     * Condicion de carrera detectada (TAR-1780): dos operaciones concurrentes
+     * intentaron modificar la misma tarifa. Se devuelve 409 Conflict para que
+     * el cliente sepa que debe recargar el recurso y reintentar, en vez de un
+     * 500 generico.
+     */
+    @ExceptionHandler(TariffConcurrentModificationException.class)
+    public ResponseEntity<ErrorResponse> handleConcurrentModification(TariffConcurrentModificationException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
 
     /**
      * Falla la validacion de un @Valid @RequestBody (ej. un TariffCreateRequest
