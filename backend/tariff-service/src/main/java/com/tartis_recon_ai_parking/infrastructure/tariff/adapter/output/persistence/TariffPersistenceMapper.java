@@ -24,7 +24,8 @@ public interface TariffPersistenceMapper {
                 entity.getType(),
                 entity.getPricePerMinute(),
                 entity.getBasePrice(),
-                entity.isActive()
+                entity.isActive(),
+                entity.getVersion()
         );
     }
 

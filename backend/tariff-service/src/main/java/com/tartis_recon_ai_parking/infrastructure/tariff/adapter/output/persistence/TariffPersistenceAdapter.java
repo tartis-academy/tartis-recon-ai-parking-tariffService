@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConcurrentModificationException;
+
 
 @Repository
 public class TariffPersistenceAdapter implements TariffPersistence {
@@ -26,8 +29,14 @@ public class TariffPersistenceAdapter implements TariffPersistence {
     public Tariff save(Tariff tariff) {
 
         TariffEntity entity = tariffPersistenceMapper.toEntity(tariff);
-        TariffEntity savedEntity = tariffRepository.save(entity);
-        return tariffPersistenceMapper.toDomain(savedEntity);
+        try {
+            TariffEntity savedEntity = tariffRepository.save(entity);
+            return tariffPersistenceMapper.toDomain(savedEntity);
+        } catch (OptimisticLockingFailureException ex) {
+            // Otra transaccion actualizo esta misma tarifa entre el
+            // findById() del caso de uso y este save() (TAR-1780).
+            throw new TariffConcurrentModificationException(tariff.getUniqueId());
+        }
     }
 
     @Override
