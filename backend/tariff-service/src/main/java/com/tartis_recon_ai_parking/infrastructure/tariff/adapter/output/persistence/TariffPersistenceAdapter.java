@@ -48,11 +48,20 @@ public class TariffPersistenceAdapter implements TariffPersistence {
 
     @Override
     public Tariff save(Tariff tariff) {
-        return execute("save", () -> {
-            TariffEntity entity = tariffPersistenceMapper.toEntity(tariff);
-            TariffEntity saved = tariffRepository.save(entity);
-            return tariffPersistenceMapper.toDomain(saved);
-        });
+        try {
+            return execute("save", () -> {
+                TariffEntity entity = tariffPersistenceMapper.toEntity(tariff);
+                TariffEntity saved = tariffRepository.save(entity);
+                return tariffPersistenceMapper.toDomain(saved);
+            });
+        } catch (ConcurrentModificationConflictException ex) {
+            // Reenriquecemos el mensaje con el id de la tarifa: es el
+            // detalle que aportaba TariffConcurrentModificationException
+            // de TAR-1780, que estamos consolidando en esta unica excepcion.
+            throw new ConcurrentModificationConflictException(
+                    "The tariff " + tariff.getUniqueId() + " was modified by another request. Please retry.",
+                    ex.getCause());
+        }
     }
 
     @Override
