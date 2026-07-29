@@ -23,14 +23,21 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 
+// Desde SEC-07, @AutoConfigureMockMvc engancha el SecurityFilterChain solo (a
+// diferencia de spot-service, donde el MockMvc se construye a mano y hace falta
+// .apply(springSecurity()) explicito). Por eso aqui basta con anadir .with(jwt())
+// a cada llamada para simular una peticion autenticada. El caso sin token se
+// prueba aparte, al final de la clase.
 @SpringBootTest
 @AutoConfigureMockMvc
 class TariffRestAdapterTest {
@@ -78,12 +85,13 @@ class TariffRestAdapterTest {
         when(mapper.toResponseList(List.of(dto))).thenReturn(List.of(response));
 
         mockMvc.perform(get("/v1/tariffs/active")
+                .with(jwt())
                 .param("type", "CAR")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id.toString()))
                 .andExpect(jsonPath("$[0].name").value("Standard"));
-        
+
         verify(getActiveTariffUseCase).execute(VehicleType.CAR);
     }
 
@@ -98,11 +106,12 @@ class TariffRestAdapterTest {
         when(mapper.toResponseList(List.of(dto))).thenReturn(List.of(response));
 
         mockMvc.perform(get("/v1/tariffs")
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(id.toString()))
                 .andExpect(jsonPath("$[0].name").value("Standard"));
-        
+
         verify(getAllTariffsUseCase).execute();
     }
 
@@ -117,11 +126,12 @@ class TariffRestAdapterTest {
         when(mapper.toResponse(dto)).thenReturn(response);
 
         mockMvc.perform(get("/v1/tariffs/{id}", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Standard"));
-        
+
         verify(getTariffUseCase).execute(id);
     }
 
@@ -139,12 +149,13 @@ class TariffRestAdapterTest {
         when(mapper.toResponse(createdDto)).thenReturn(response);
 
         mockMvc.perform(post("/v1/tariffs")
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Standard"));
-        
+
         verify(createTariffUseCase).execute(createDto);
     }
 
@@ -153,7 +164,7 @@ class TariffRestAdapterTest {
     void shouldUpdateTariff() throws Exception {
         UUID id = UUID.randomUUID();
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0")); 
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         TariffDTO updatedDto = new TariffDTO(id, "Premium", VehicleType.CAR, new BigDecimal("0.08"), new BigDecimal("3.0"), true);
         TariffResponse response = new TariffResponse(id, "Premium", VehicleType.CAR, new BigDecimal("0.08"), new BigDecimal("3.0"), true);
 
@@ -162,12 +173,13 @@ class TariffRestAdapterTest {
         when(mapper.toResponse(updatedDto)).thenReturn(response);
 
         mockMvc.perform(put("/v1/tariffs/{id}", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.name").value("Premium"));
-                
+
         verify(updateTariffUseCase).execute(eq(id), eq(updateDto));
     }
 
@@ -183,11 +195,12 @@ class TariffRestAdapterTest {
         when(mapper.toResponse(activatedDto)).thenReturn(response);
 
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(true));
-                
+
         verify(activateTariffUseCase).execute(id);
     }
 
@@ -203,11 +216,12 @@ class TariffRestAdapterTest {
         when(mapper.toResponse(deactivatedDto)).thenReturn(response);
 
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.active").value(false));
-                
+
         verify(deactivateTariffUseCase).execute(id);
     }
 
@@ -218,6 +232,7 @@ class TariffRestAdapterTest {
         TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("-0.05"), new BigDecimal("2.0"), true);
 
         mockMvc.perform(post("/v1/tariffs")
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -231,6 +246,7 @@ class TariffRestAdapterTest {
         TariffUpdateRequest request = new TariffUpdateRequest("", new BigDecimal("0.05"), new BigDecimal("2.0"));
 
         mockMvc.perform(put("/v1/tariffs/{id}", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -243,6 +259,7 @@ class TariffRestAdapterTest {
         TariffStatusRequest request = new TariffStatusRequest(null);
 
         mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -255,6 +272,7 @@ class TariffRestAdapterTest {
         when(getTariffUseCase.execute(id)).thenThrow(new com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException(id));
 
         mockMvc.perform(get("/v1/tariffs/{id}", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -265,13 +283,25 @@ class TariffRestAdapterTest {
         UUID id = UUID.randomUUID();
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
         TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
-        
+
         when(mapper.toUpdateDTO(any(TariffUpdateRequest.class))).thenReturn(updateDto);
         when(updateTariffUseCase.execute(eq(id), eq(updateDto))).thenThrow(new com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException(id));
 
         mockMvc.perform(put("/v1/tariffs/{id}", id)
+                .with(jwt())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    // --- SEC-07: verificacion propia del resource server, no de negocio ---
+
+    @Test
+    @DisplayName("Debe rechazar con 401 una peticion sin token")
+    void shouldReturn401WhenNoTokenProvided() throws Exception {
+        mockMvc.perform(get("/v1/tariffs"))
+                .andExpect(status().isUnauthorized());
+
+        verify(getAllTariffsUseCase, never()).execute();
     }
 }
