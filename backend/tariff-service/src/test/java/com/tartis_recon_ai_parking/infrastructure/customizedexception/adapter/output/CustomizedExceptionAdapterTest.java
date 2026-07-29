@@ -1,6 +1,7 @@
 package com.tartis_recon_ai_parking.infrastructure.customizedexception.adapter.output;
 
 import com.tartis_recon_ai_parking.domain.tariff.exception.InvalidTariffException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConcurrentModificationException;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,25 @@ class CustomizedExceptionAdapterTest {
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getBody().getStatus());
         assertEquals("BAD_REQUEST", response.getBody().getError());
         assertEquals(exception.getMessage(), response.getBody().getMessage());
+        assertNotNull(response.getBody().getTimestamp());
+    }
+
+    @Test
+    @DisplayName("Debe manejar TariffConcurrentModificationException retornando 409 Conflict (TAR-1780)")
+    void shouldHandleTariffConcurrentModificationException() {
+        UUID id = UUID.randomUUID();
+        TariffConcurrentModificationException exception = new TariffConcurrentModificationException(id);
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleConcurrentModification(exception, requestTo("/v1/tariffs/" + id));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.CONFLICT.value(), response.getBody().getStatus());
+        assertEquals("CONFLICT", response.getBody().getError());
+        assertEquals(exception.getMessage(), response.getBody().getMessage());
+        assertEquals("/v1/tariffs/" + id, response.getBody().getPath());
         assertNotNull(response.getBody().getTimestamp());
     }
 

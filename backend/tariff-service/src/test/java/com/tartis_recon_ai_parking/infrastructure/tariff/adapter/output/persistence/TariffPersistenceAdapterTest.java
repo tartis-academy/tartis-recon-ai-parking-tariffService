@@ -3,12 +3,14 @@ package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.output.persist
 
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConcurrentModificationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -52,6 +55,28 @@ class TariffPersistenceAdapterTest {
         verify(tariffPersistenceMapper, times(1)).toEntity(tariff);
         verify(tariffRepository, times(1)).save(entity);
         verify(tariffPersistenceMapper, times(1)).toDomain(entity);
+    }
+
+    @Test
+    @DisplayName("Debe traducir OptimisticLockingFailureException a TariffConcurrentModificationException cuando hay conflicto de concurrencia (TAR-1780)")
+    void shouldThrowConcurrentModificationExceptionOnOptimisticLockConflict() {
+        UUID id = UUID.randomUUID();
+        Tariff tariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true, 1L);
+
+        TariffEntity entity = new TariffEntity();
+        entity.setUniqueId(id);
+        entity.setName("Standard");
+
+        when(tariffPersistenceMapper.toEntity(tariff)).thenReturn(entity);
+        when(tariffRepository.save(entity)).thenThrow(new OptimisticLockingFailureException("stale version"));
+
+        assertThatThrownBy(() -> tariffPersistenceAdapter.save(tariff))
+                .isInstanceOf(TariffConcurrentModificationException.class)
+                .hasMessageContaining(id.toString());
+
+        verify(tariffPersistenceMapper, times(1)).toEntity(tariff);
+        verify(tariffRepository, times(1)).save(entity);
+        verify(tariffPersistenceMapper, never()).toDomain(any());
     }
 
     @Test
@@ -177,7 +202,7 @@ class TariffPersistenceAdapterTest {
 
         assertThat(result).isNotNull().hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Standard");
-        verify(tariffRepository, times(1)).findByActiveTrueAndType(VehicleType.CAR);
-        verify(tariffPersistenceMapper, times(1)).toDomain(any());
+        verify(tariffRepository, times(1)).findByActiveTrueAndType(VehicleType.CAR);       
+         verify(tariffPersistenceMapper, times(1)).toDomain(any());
     }
 }
