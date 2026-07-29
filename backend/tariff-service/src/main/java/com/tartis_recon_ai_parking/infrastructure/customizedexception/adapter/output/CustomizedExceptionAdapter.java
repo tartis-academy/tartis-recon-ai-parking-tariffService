@@ -15,6 +15,14 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import com.tartis_recon_ai_parking.application.tariff.exception.ConcurrentModificationConflictException;
+import com.tartis_recon_ai_parking.application.tariff.exception.PersistenceFailureException;
+import com.tartis_recon_ai_parking.application.tariff.exception.PersistenceUnavailableException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.CorruptedTariffDataException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.transaction.TransactionException;
 
 import java.util.stream.Collectors;
 
@@ -39,6 +47,7 @@ public class CustomizedExceptionAdapter {
     public ResponseEntity<ErrorResponse> handleInvalidTariff(InvalidTariffException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
+     
 
     /**
      * Falla la validacion de un @Valid @RequestBody (ej. un TariffCreateRequest
@@ -98,6 +107,84 @@ public class CustomizedExceptionAdapter {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
+
+    // ==================== Escenarios de ruptura de BD ====================
+
+    /**
+     * Nombre de tarifa duplicado. Es el unico de este bloque cuyo mensaje
+     * se devuelve tal cual al cliente: lo redacta el adapter de
+     * persistencia, no la BD, asi que no filtra nada.
+     */
+    @ExceptionHandler(TariffAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleTariffAlreadyExists(TariffAlreadyExistsException ex,
+                                                                   HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    /**
+     * Conflicto de concurrencia (deadlock, lock optimista). El cliente
+     * puede reintentar y tiene sentido que lo haga.
+     */
+    @ExceptionHandler(ConcurrentModificationConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConcurrencyConflict(ConcurrentModificationConflictException ex,
+                                                                    HttpServletRequest request) {
+        log.warn("Conflicto de concurrencia en [{} {}]", request.getMethod(), request.getRequestURI(), ex);
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    /**
+     * BD caida o que no responde. 503 + Retry-After: le decimos al
+     * frontend que esto es transitorio y cuando volver a intentarlo.
+     */
+    @ExceptionHandler(PersistenceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handlePersistenceUnavailable(PersistenceUnavailableException ex,
+                                                                       HttpServletRequest request) {
+        log.error("Persistencia no disponible en [{} {}]", request.getMethod(), request.getRequestURI(), ex);
+        return buildRetryableResponse(
+                "The service is temporarily unavailable. Please try again shortly.", request);
+    }
+
+    /**
+     * Datos almacenados que incumplen los invariantes de dominio. Es un
+     * fallo del servidor: sin este handler, la InvalidTariffException que
+     * lanza Tariff.reconstruct() al leer acabaria en el handler de 400,
+     * culpando al cliente de una fila corrupta.
+     */
+    @ExceptionHandler(CorruptedTariffDataException.class)
+    public ResponseEntity<ErrorResponse> handleCorruptedData(CorruptedTariffDataException ex,
+                                                              HttpServletRequest request) {
+        log.error("Datos inconsistentes en BD en [{} {}]", request.getMethod(), request.getRequestURI(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.", request);
+    }
+
+    /**
+     * Fallo de persistencia no transitorio ya traducido por el adapter.
+     */
+    @ExceptionHandler(PersistenceFailureException.class)
+    public ResponseEntity<ErrorResponse> handlePersistenceFailure(PersistenceFailureException ex,
+                                                                   HttpServletRequest request) {
+        log.error("Fallo de persistencia en [{} {}]", request.getMethod(), request.getRequestURI(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.", request);
+    }
+
+    /**
+     * RED DE SEGURIDAD. Cualquier excepcion de BD que esquive la
+     * traduccion del adapter (p.ej. una violacion de constraint que
+     * aflora en el commit, ya fuera del try/catch del adapter) acaba
+     * aqui. NUNCA se devuelve ex.getMessage(): contiene el SQL, el
+     * nombre de la constraint y el de la tabla.
+     */
+    @ExceptionHandler({DataAccessException.class, TransactionException.class})
+    public ResponseEntity<ErrorResponse> handleUntranslatedDataAccess(Exception ex, HttpServletRequest request) {
+        log.error("Excepcion de persistencia SIN traducir en [{} {}] - revisar TariffPersistenceAdapter",
+                request.getMethod(), request.getRequestURI(), ex);
+        return buildRetryableResponse(
+                "The service is temporarily unavailable. Please try again shortly.", request);
+    }
+
+
     /**
      * Catch-all: cualquier excepcion no controlada explicitamente
      * (errores de infraestructura, NullPointerException, fallos de BD,
@@ -122,5 +209,13 @@ public class CustomizedExceptionAdapter {
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
         ErrorResponse body = new ErrorResponse(status.value(), status.name(), message, request.getRequestURI());
         return ResponseEntity.status(status).body(body);
+    }
+
+    private ResponseEntity<ErrorResponse> buildRetryableResponse(String message, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        ErrorResponse body = new ErrorResponse(status.value(), status.name(), message, request.getRequestURI());
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.RETRY_AFTER, "5")
+                .body(body);
     }
 }
