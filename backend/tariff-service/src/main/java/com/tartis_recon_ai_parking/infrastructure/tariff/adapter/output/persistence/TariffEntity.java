@@ -6,6 +6,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -34,11 +35,13 @@ public class TariffEntity {
 
     @Column(nullable = false)
     private boolean active;
+    @Version
+    @Column(nullable = true)
+    private Long version;
 
     // Constructor vacío requerido por JPA
     public TariffEntity() {
     }
-
     public TariffEntity(UUID uniqueId, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
         this.uniqueId = uniqueId;
         this.name = name;
@@ -46,6 +49,16 @@ public class TariffEntity {
         this.pricePerMinute = pricePerMinute;
         this.basePrice = basePrice;
         this.active = active;
+    }
+
+    public TariffEntity(UUID uniqueId, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active, Long version) {
+        this.uniqueId = uniqueId;
+        this.name = name;
+        this.type = type;
+        this.pricePerMinute = pricePerMinute;
+        this.basePrice = basePrice;
+        this.active = active;
+        this.version =version;
     }
 
     // Getters y Setters
@@ -95,5 +108,12 @@ public class TariffEntity {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+     public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }

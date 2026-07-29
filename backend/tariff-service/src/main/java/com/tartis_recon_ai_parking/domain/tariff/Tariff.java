@@ -14,16 +14,22 @@ public class Tariff {
     private BigDecimal pricePerMinute;
     private BigDecimal basePrice;
     private boolean active;
+    private Long version;
 
     public static Tariff create(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
-        return new Tariff(UUID.randomUUID(), name, type, pricePerMinute, basePrice, active);
+        return new Tariff(UUID.randomUUID(), name, type, pricePerMinute, basePrice, active, null);
     }
 
+    public static Tariff reconstruct(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active, Long version) {
+        return new Tariff(id, name, type, pricePerMinute, basePrice, active, version);
+    }
+     // Overload retrocompatible (tests y llamadas que no manejan version
+    // explicitamente). Equivale a una tarifa sin control de version aun.
     public static Tariff reconstruct(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
-        return new Tariff(id, name, type, pricePerMinute, basePrice, active);
+        return new Tariff(id, name, type, pricePerMinute, basePrice, active, null);
     }
 
-    private Tariff(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active) {
+    private Tariff(UUID id, String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice, boolean active, Long version) {
 
         validateData(name, type, pricePerMinute, basePrice);
         
@@ -33,6 +39,7 @@ public class Tariff {
         this.pricePerMinute = pricePerMinute;
         this.basePrice = basePrice;
         this.active = active;
+        this.version = version;
     }
 
     private void validateData(String name, VehicleType type, BigDecimal pricePerMinute, BigDecimal basePrice){
@@ -50,15 +57,15 @@ public class Tariff {
     }
     
     public Tariff update(String name, BigDecimal pricePerMinute, BigDecimal basePrice){
-        return new Tariff(this.uniqueId, name, this.type, pricePerMinute, basePrice, this.active);
+        return new Tariff(this.uniqueId, name, this.type, pricePerMinute, basePrice, this.active, this.version);
     }
 
     public Tariff activate() {
-        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, true);
+        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, true, this.version);
     }
 
     public Tariff deactivate() {
-        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, false);
+        return new Tariff(this.uniqueId, this.name, this.type, this.pricePerMinute, this.basePrice, false, this.version);
     }
 
     //==================== GETTERS ====================
@@ -86,5 +93,9 @@ public class Tariff {
     public boolean isActive() {
         return active;
     }
+    public Long getVersion() {
+        return version;
+    }
+
 
 }

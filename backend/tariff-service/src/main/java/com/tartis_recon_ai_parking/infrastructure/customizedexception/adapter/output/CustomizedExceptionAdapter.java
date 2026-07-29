@@ -47,6 +47,7 @@ public class CustomizedExceptionAdapter {
     public ResponseEntity<ErrorResponse> handleInvalidTariff(InvalidTariffException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
+     
 
     /**
      * Falla la validacion de un @Valid @RequestBody (ej. un TariffCreateRequest
