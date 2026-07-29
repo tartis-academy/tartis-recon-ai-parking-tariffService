@@ -3,12 +3,14 @@ package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
 public class TariffUpdateRequest {
 
     @NotBlank
+    @Size(max = 255)
     private String name;
 
     @NotNull
