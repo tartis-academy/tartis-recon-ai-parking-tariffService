@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import com.tartis_recon_ai_parking.domain.tariff.exception.InvalidTariffException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
 
 @ExtendWith(MockitoExtension.class)
 class CreateTariffUseCaseTest {
@@ -60,6 +61,18 @@ class CreateTariffUseCaseTest {
         
         assertThrows(InvalidTariffException.class, () -> createTariffUseCase.execute(createDto));
         
+        verify(tariffPersistence, never()).save(any(Tariff.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar TariffAlreadyExistsException si el nombre ya existe, sin llegar a guardar")
+    void shouldThrowExceptionWhenNameAlreadyExists() {
+        TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+
+        when(tariffPersistence.existsByName("Standard")).thenReturn(true);
+
+        assertThrows(TariffAlreadyExistsException.class, () -> createTariffUseCase.execute(createDto));
+
         verify(tariffPersistence, never()).save(any(Tariff.class));
     }
 }
