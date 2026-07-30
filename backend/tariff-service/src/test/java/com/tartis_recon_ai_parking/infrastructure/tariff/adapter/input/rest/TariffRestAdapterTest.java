@@ -9,6 +9,7 @@ import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.
 import com.tartis_recon_ai_parking.application.tariff.usecase.*;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffCreateRequest;
+import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffStatusRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffUpdateRequest;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
@@ -227,8 +228,8 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("ADMIN: Debe permitir calcular el precio (200)")
     void shouldAllowCalculatePriceForAdmin() throws Exception {
-        com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest request = 
-                new com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest(VehicleType.CAR, 120);
+        TariffPriceRequest priceRequest =
+                new TariffPriceRequest(VehicleType.CAR, 120);
         PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
         PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
 
@@ -238,7 +239,7 @@ class TariffRestAdapterTest {
         mockMvc.perform(post("/v1/tariffs/calculate")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(priceRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.price").value(8.00));
 
@@ -370,18 +371,123 @@ class TariffRestAdapterTest {
     }
 
     @Test
-    @DisplayName("OPERARIO: Debe denegar el calculo de precio (403)")
-    void shouldDenyCalculatePriceForOperario() throws Exception {
-        com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest request = 
-                new com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest(VehicleType.CAR, 120);
+    @DisplayName("OPERARIO: Debe permitir el calculo de precio (200)")
+    void shouldAllowCalculatePriceForOperario() throws Exception {
+        TariffPriceRequest priceRequest =
+                new TariffPriceRequest(VehicleType.CAR, 120);
+        PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
+        PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
+
+        when(priceCalculator.execute(VehicleType.CAR, 120)).thenReturn(priceDto);
+        when(mapper.toResponse(priceDto)).thenReturn(response);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_OPERARIO")))
                         .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(priceRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price").value(8.00));
+
+        verify(priceCalculator).execute(VehicleType.CAR, 120);
+    }
+
+    // =========================================================================
+    // PRUEBAS PARA ROL: SERVICE (maquina-a-maquina, usado por stay-service)
+    // =========================================================================
+
+    @Test
+    @DisplayName("SERVICE: Debe permitir consultar tarifas activas (200)")
+    void shouldGetActiveTariffsForService() throws Exception {
+        UUID id = UUID.randomUUID();
+        TariffDTO dto = new TariffDTO(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        TariffResponse tariffResponse = new TariffResponse(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+
+        when(getActiveTariffUseCase.execute(VehicleType.CAR)).thenReturn(List.of(dto));
+        when(mapper.toResponseList(List.of(dto))).thenReturn(List.of(tariffResponse));
+
+        mockMvc.perform(get("/v1/tariffs/active")
+                .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
+                .param("type", "CAR")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id.toString()));
+
+        verify(getActiveTariffUseCase).execute(VehicleType.CAR);
+    }
+
+    @Test
+    @DisplayName("SERVICE: Debe permitir calcular el precio (200)")
+    void shouldAllowCalculatePriceForService() throws Exception {
+        TariffPriceRequest priceRequest =
+                new TariffPriceRequest(VehicleType.CAR, 120);
+        PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
+        PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
+
+        when(priceCalculator.execute(VehicleType.CAR, 120)).thenReturn(priceDto);
+        when(mapper.toResponse(priceDto)).thenReturn(response);
+
+        mockMvc.perform(post("/v1/tariffs/calculate")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(priceRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price").value(8.00));
+
+        verify(priceCalculator).execute(VehicleType.CAR, 120);
+    }
+
+    @Test
+    @DisplayName("SERVICE: Debe denegar la consulta de todas las tarifas (403)")
+    void shouldDenyGetAllTariffsForService() throws Exception {
+        mockMvc.perform(get("/v1/tariffs")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE"))))
+                .andExpect(status().isForbidden());
+
+        verify(getAllTariffsUseCase, never()).execute();
+    }
+
+    @Test
+    @DisplayName("SERVICE: Debe denegar la creacion de tarifas (403)")
+    void shouldDenyCreateTariffForService() throws Exception {
+        TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+
+        mockMvc.perform(post("/v1/tariffs")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
 
-        verify(priceCalculator, never()).execute(any(), anyInt());
+        verify(createTariffUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("SERVICE: Debe denegar la actualizacion de tarifas (403)")
+    void shouldDenyUpdateTariffForService() throws Exception {
+        UUID id = UUID.randomUUID();
+        TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+
+        mockMvc.perform(put("/v1/tariffs/{id}", id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(updateTariffUseCase, never()).execute(any(), any());
+    }
+
+    @Test
+    @DisplayName("SERVICE: Debe denegar el cambio de estado de tarifas (403)")
+    void shouldDenyChangeStatusForService() throws Exception {
+        UUID id = UUID.randomUUID();
+        TariffStatusRequest request = new TariffStatusRequest(true);
+
+        mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+
+        verify(activateTariffUseCase, never()).execute(any());
     }
 
     // =========================================================================
@@ -482,13 +588,13 @@ class TariffRestAdapterTest {
     @Test
     @DisplayName("USER: Debe denegar el calculo de precio (403)")
     void shouldDenyCalculatePriceForUser() throws Exception {
-        com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest request = 
-                new com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest(VehicleType.CAR, 120);
+        TariffPriceRequest priceRequest =
+                new TariffPriceRequest(VehicleType.CAR, 120);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(priceRequest)))
                 .andExpect(status().isForbidden());
 
         verify(priceCalculator, never()).execute(any(), anyInt());

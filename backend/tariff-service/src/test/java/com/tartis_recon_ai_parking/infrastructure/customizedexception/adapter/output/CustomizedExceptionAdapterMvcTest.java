@@ -1,8 +1,14 @@
 package com.tartis_recon_ai_parking.infrastructure.customizedexception.adapter.output;
 
+import com.tartis_recon_ai_parking.application.tariff.usecase.ActivateTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.CreateTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.DeactivateTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.GetActiveTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetAllTariffsUseCase;
-import com.tartis_recon_ai_parking.infrastructure.config.SecurityConfig;
-import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.TariffRestAdapter;
+import com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase;
+import com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase;
+import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.TariffRestMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +18,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.core.authority.AuthorityUtils.createAuthorityList;
@@ -26,24 +34,15 @@ class CustomizedExceptionAdapterMvcTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.CreateTariffUseCase createTariffUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase getTariffUseCase;
-    @MockitoBean
-    private GetAllTariffsUseCase getAllTariffsUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.GetActiveTariffUseCase getActiveTariffUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase updateTariffUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.ActivateTariffUseCase activateTariffUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.DeactivateTariffUseCase deactivateTariffUseCase;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.TariffRestMapper mapper;
-    @MockitoBean
-    private com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase priceCalculator;
+    @MockitoBean private CreateTariffUseCase createTariffUseCase;
+    @MockitoBean private GetTariffUseCase getTariffUseCase;
+    @MockitoBean private GetAllTariffsUseCase getAllTariffsUseCase;
+    @MockitoBean private GetActiveTariffUseCase getActiveTariffUseCase;
+    @MockitoBean private UpdateTariffUseCase updateTariffUseCase;
+    @MockitoBean private ActivateTariffUseCase activateTariffUseCase;
+    @MockitoBean private DeactivateTariffUseCase deactivateTariffUseCase;
+    @MockitoBean private TariffRestMapper mapper;
+    @MockitoBean private PriceCalculateUseCase priceCalculator;
 
     @Test
     @DisplayName("Debe capturar DataAccessException genérica via @RestControllerAdvice y responder HTTP 503 Service Unavailable")
@@ -59,10 +58,15 @@ class CustomizedExceptionAdapterMvcTest {
     }
 
     @Test
-    @DisplayName("Debe propagar AccessDeniedException (provocada por @PreAuthorize) y resultar en HTTP 403 Forbidden")
+    @DisplayName("Debe propagar AccessDeniedException (provocada por @PreAuthorize) y resultar en HTTP 403 Forbidden con ErrorResponse")
     void shouldReturn403WhenAccessDeniedOccurs() throws Exception {
         mockMvc.perform(get("/v1/tariffs")
                         .with(jwt().authorities(createAuthorityList("ROLE_USER"))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("You do not have permission to perform this action."));
+
+        verify(getAllTariffsUseCase, never()).execute();
     }
 }
