@@ -169,6 +169,25 @@ class CustomizedExceptionAdapterTest {
     }
 
     @Test
+    @DisplayName("Debe manejar AuthenticationException devolviendo 401 Unauthorized con ErrorResponse conforme al contrato")
+    void shouldHandleUnauthorizedException() {
+        org.springframework.security.authentication.BadCredentialsException exception =
+                new org.springframework.security.authentication.BadCredentialsException("Invalid token");
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleUnauthorized(exception, requestTo("/v1/tariffs"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.UNAUTHORIZED.value(), response.getBody().getStatus());
+        assertEquals("UNAUTHORIZED", response.getBody().getError());
+        assertEquals("Authentication token is missing, invalid, or expired.", response.getBody().getMessage());
+        assertEquals("/v1/tariffs", response.getBody().getPath());
+        assertNotNull(response.getBody().getTimestamp());
+    }
+
+    @Test
     @DisplayName("Debe manejar AccessDeniedException devolviendo 403 Forbidden con ErrorResponse conforme al contrato")
     void shouldHandleAccessDeniedException() {
         org.springframework.security.access.AccessDeniedException exception =
