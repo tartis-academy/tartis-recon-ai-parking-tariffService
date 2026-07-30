@@ -36,7 +36,7 @@ public class TariffEntity {
     @Column(nullable = false)
     private boolean active;
     @Version
-    @Column(nullable = true)
+    @Column(nullable = false)
     private Long version;
 
     // Constructor vacío requerido por JPA
