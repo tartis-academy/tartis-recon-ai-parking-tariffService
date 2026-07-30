@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 /**
  * Prueba de extremo a extremo (DispatcherServlet real, sin llamar a los
@@ -23,6 +24,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * ruta/query con tipo incorrecto o ausentes. Antes de la correccion,
  * estos casos caian en el catch-all de Exception y devolvian 500 en vez
  * de 400 -confundiendo un error de cliente con un fallo de servidor-.
+ *
+ * Desde SEC-07 todas las llamadas llevan .with(jwt()): el SecurityFilterChain
+ * actua antes que el DispatcherServlet, asi que sin token estos escenarios
+ * darian 401 en vez del 400 que es lo que este test quiere comprobar.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,6 +61,7 @@ class TariffClientErrorScenariosTest {
         String malformedJson = "{ \"name\": \"Standard\", \"type\": \"CAR\", "; // JSON incompleto/roto
 
         mockMvc.perform(post("/v1/tariffs")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(malformedJson))
                 .andExpect(status().isBadRequest())
@@ -78,6 +84,7 @@ class TariffClientErrorScenariosTest {
                 + "}";
 
         mockMvc.perform(post("/v1/tariffs")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonWithInvalidEnum))
                 .andExpect(status().isBadRequest())
@@ -88,7 +95,7 @@ class TariffClientErrorScenariosTest {
     @Test
     @DisplayName("GET con un UUID mal formado en la ruta debe devolver 400 con el contrato ErrorResponse, no 500")
     void shouldReturnBadRequestOnInvalidUuidPathVariable() throws Exception {
-        mockMvc.perform(get("/v1/tariffs/{id}", "not-a-valid-uuid"))
+        mockMvc.perform(get("/v1/tariffs/{id}", "not-a-valid-uuid").with(jwt()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
@@ -98,7 +105,7 @@ class TariffClientErrorScenariosTest {
     @Test
     @DisplayName("GET con un query param obligatorio ausente debe devolver 400 con el contrato ErrorResponse, no 500")
     void shouldReturnBadRequestOnMissingRequiredQueryParam() throws Exception {
-        mockMvc.perform(get("/v1/tariffs/active"))
+        mockMvc.perform(get("/v1/tariffs/active").with(jwt()))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("BAD_REQUEST"));
@@ -107,7 +114,7 @@ class TariffClientErrorScenariosTest {
     @Test
     @DisplayName("GET con un query param con tipo de enum invalido debe devolver 400 con el contrato ErrorResponse, no 500")
     void shouldReturnBadRequestOnInvalidEnumQueryParam() throws Exception {
-        mockMvc.perform(get("/v1/tariffs/active").param("type", "BUS"))
+        mockMvc.perform(get("/v1/tariffs/active").with(jwt()).param("type", "BUS"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("BAD_REQUEST"));

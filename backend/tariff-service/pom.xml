@@ -45,6 +45,18 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- SEC-07: resource server OAuth2 contra el realm de Keycloak, replicado
+		     de vehicle-service (SEC-04/SEC-05). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- Sin starter-web el proceso arranca el contexto y muere sin abrir
 		     puerto; sin validation fallan las anotaciones @Valid del adapter REST. -->
 		<dependency>

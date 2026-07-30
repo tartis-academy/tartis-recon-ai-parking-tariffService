@@ -27,12 +27,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 /**
  * Gemelo de TariffClientErrorScenariosTest, pero para el otro extremo:
  * fallos de la capa de persistencia. Verifica el contrato HTTP completo
  * que ve el frontend y, sobre todo, que ningun detalle de BD (SQL,
  * constraint, tabla, host) sobrevive hasta la respuesta.
+ *
+ * Desde SEC-07 todas las llamadas llevan .with(jwt()): sin token, el
+ * SecurityFilterChain corta con 401 antes de que el caso de uso mockeado
+ * llegue a lanzar la excepcion que cada test quiere comprobar.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -62,6 +67,7 @@ class TariffDatabaseErrorScenariosTest {
                 .thenThrow(new TariffAlreadyExistsException("A tariff with that name already exists."));
 
         mockMvc.perform(post("/v1/tariffs")
+                        .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_CREATE_BODY))
                 .andExpect(status().isConflict())
@@ -79,7 +85,7 @@ class TariffDatabaseErrorScenariosTest {
                 .thenThrow(new ConcurrentModificationConflictException(
                         "The tariff was modified by another request. Please retry.", null));
 
-        mockMvc.perform(get("/v1/tariffs"))
+        mockMvc.perform(get("/v1/tariffs").with(jwt()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
     }
@@ -91,7 +97,7 @@ class TariffDatabaseErrorScenariosTest {
                 .thenThrow(new PersistenceUnavailableException(
                         "The database is currently unavailable.", null));
 
-        mockMvc.perform(get("/v1/tariffs"))
+        mockMvc.perform(get("/v1/tariffs").with(jwt()))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string("Retry-After", "5"))
                 .andExpect(jsonPath("$.status").value(503))
@@ -107,7 +113,7 @@ class TariffDatabaseErrorScenariosTest {
                 .thenThrow(new PersistenceFailureException(
                         "relation \"tariff.tariffs\" does not exist", null));
 
-        mockMvc.perform(get("/v1/tariffs"))
+        mockMvc.perform(get("/v1/tariffs").with(jwt()))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.message").value("An unexpected error occurred. Please try again later."))
@@ -122,7 +128,7 @@ class TariffDatabaseErrorScenariosTest {
         when(getTariffUseCase.execute(id))
                 .thenThrow(new CorruptedTariffDataException("Stored tariff data is inconsistent.", null));
 
-        mockMvc.perform(get("/v1/tariffs/{id}", id))
+        mockMvc.perform(get("/v1/tariffs/{id}", id).with(jwt()))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500));
     }
@@ -134,7 +140,7 @@ class TariffDatabaseErrorScenariosTest {
                 "could not execute statement [ERROR: duplicate key value violates unique constraint "
                 + "\"tariffs_name_key\"] [insert into tariffs (name) values (?)]"));
 
-        mockMvc.perform(get("/v1/tariffs"))
+        mockMvc.perform(get("/v1/tariffs").with(jwt()))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().string(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("tariffs_name_key"))))
