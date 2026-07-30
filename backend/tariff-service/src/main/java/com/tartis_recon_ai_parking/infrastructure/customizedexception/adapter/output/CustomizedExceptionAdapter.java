@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -188,15 +189,21 @@ public class CustomizedExceptionAdapter {
     // ==================== Seguridad ====================
 
     /**
-     * SEC-10: acceso denegado por @PreAuthorize. Sin este handler, la
-     * AccessDeniedException era capturada por el catch-all de Exception.class
-     * y convertida en un 500 — o, si se borraba el catch-all, propagada al
-     * ExceptionTranslationFilter que devuelve un 403 con cuerpo vacio/Boot.
-     * Aqui devolvemos el mismo ErrorResponse que el resto de la API.
-     *
-     * Spring resuelve por proximidad de tipo: AccessDeniedException gana
-     * siempre sobre Exception.class, asi que ambos handlers conviven sin
-     * conflicto.
+     * HTTP 401 Unauthorized: El token de autenticación está ausente, es inválido o ha caducado.
+     * <p>
+     * Diagnóstico para el equipo: El problema reside en la forma en que el frontend envía el token de autenticación.
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(AuthenticationException ex, HttpServletRequest request) {
+        log.warn("Autenticación fallida o token inválido en [{} {}]", request.getMethod(), request.getRequestURI());
+        return buildResponse(HttpStatus.UNAUTHORIZED,
+                "Authentication token is missing, invalid, or expired.", request);
+    }
+
+    /**
+     * HTTP 403 Forbidden: El token de autenticación es válido pero el usuario no posee el rol necesario.
+     * <p>
+     * Diagnóstico para el equipo: El problema reside en los roles configurados asignados a la identidad.
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
