@@ -15,12 +15,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.QueryTimeoutException;
+import org.springframework.dao.TransientDataAccessException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -158,5 +160,27 @@ class TariffPersistenceAdapterDatabaseErrorTest {
         assertThatThrownBy(() -> adapter.findById(id))
                 .isInstanceOf(CorruptedTariffDataException.class)
                 .isNotInstanceOf(InvalidTariffException.class);
+    }
+
+    @Test
+    @DisplayName("Una DataAccessException generica no clasificada debe traducirse a PersistenceFailureException")
+    void shouldTranslateGenericDataAccessException() {
+        when(tariffRepository.findAll()).thenThrow(
+                new DataAccessException("Unclassified failure") {});
+
+        assertThatThrownBy(() -> adapter.findAll())
+                .isInstanceOf(PersistenceFailureException.class)
+                .hasMessageNotContaining("Unclassified");
+    }
+
+    @Test
+    @DisplayName("Un fallo transitorio de BD generico debe traducirse a PersistenceUnavailableException")
+    void shouldTranslateTransientDataAccessException() {
+        when(tariffRepository.findAll()).thenThrow(
+                new TransientDataAccessException("Temporary network glitch") {});
+
+        assertThatThrownBy(() -> adapter.findAll())
+                .isInstanceOf(PersistenceUnavailableException.class)
+                .hasMessageNotContaining("Temporary network glitch");
     }
 }
