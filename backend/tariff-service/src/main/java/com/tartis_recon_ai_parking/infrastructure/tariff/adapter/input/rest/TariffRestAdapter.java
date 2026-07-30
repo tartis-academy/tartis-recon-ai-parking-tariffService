@@ -19,6 +19,7 @@ import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
 
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,7 @@ public class TariffRestAdapter {
     // Declarado antes que "/{id}" para que Spring no intente resolver
     // "active" como UUID.
     @GetMapping("/active")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO', 'SERVICE')")
     public ResponseEntity<List<TariffResponse>> getActive(@RequestParam VehicleType type) {
         List<TariffDTO> dtos = getActiveTariffUseCase.execute(type);
         return ResponseEntity.ok(mapper.toResponseList(dtos));
@@ -80,6 +82,7 @@ public class TariffRestAdapter {
 
     // GET /v1/tariffs
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO')")
     public ResponseEntity<List<TariffResponse>> getAll() {
         List<TariffDTO> dtos = getAllTariffsUseCase.execute();
         return ResponseEntity.ok(mapper.toResponseList(dtos));
@@ -87,6 +90,7 @@ public class TariffRestAdapter {
 
     // GET /v1/tariffs/{id}
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO')")
     public ResponseEntity<TariffResponse> getById(@PathVariable UUID id) {
         TariffDTO dto = getTariffUseCase.execute(id);
         return ResponseEntity.ok(mapper.toResponse(dto));
@@ -94,6 +98,7 @@ public class TariffRestAdapter {
 
     // POST /v1/tariffs
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TariffResponse> create(@Valid @RequestBody TariffCreateRequest request) {
         TariffDTO dto = createTariffUseCase.execute(mapper.toCreateDTO(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(dto));
@@ -101,6 +106,7 @@ public class TariffRestAdapter {
 
     // PUT /v1/tariffs/{id}
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TariffResponse> update(@PathVariable UUID id,
                                                   @Valid @RequestBody TariffUpdateRequest request) {
         TariffDTO dto = updateTariffUseCase.execute(id, mapper.toUpdateDTO(request));
@@ -109,6 +115,7 @@ public class TariffRestAdapter {
 
     // PATCH /v1/tariffs/{id}/status
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TariffResponse> changeStatus(@PathVariable UUID id,
                                                          @Valid @RequestBody TariffStatusRequest request) {
         TariffDTO dto = Boolean.TRUE.equals(request.getActive())
@@ -118,7 +125,8 @@ public class TariffRestAdapter {
     }
 
     @PostMapping("/calculate")
-    public ResponseEntity<PriceResponse> calculatePrice(@RequestBody TariffPriceRequest request) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO', 'SERVICE')")
+    public ResponseEntity<PriceResponse> calculatePrice(@Valid @RequestBody TariffPriceRequest request) {
         
         PriceTransferDTO price = priceCalculator.execute(request.getVehicleType(), request.getMinutes());
         

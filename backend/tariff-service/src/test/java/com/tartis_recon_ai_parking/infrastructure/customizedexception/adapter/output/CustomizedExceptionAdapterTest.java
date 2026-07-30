@@ -169,9 +169,28 @@ class CustomizedExceptionAdapterTest {
     }
 
     @Test
+    @DisplayName("Debe manejar AccessDeniedException devolviendo 403 Forbidden con ErrorResponse conforme al contrato")
+    void shouldHandleAccessDeniedException() {
+        org.springframework.security.access.AccessDeniedException exception =
+                new org.springframework.security.access.AccessDeniedException("Access is denied");
+
+        ResponseEntity<ErrorResponse> response =
+                exceptionAdapter.handleAccessDenied(exception, requestTo("/v1/tariffs"));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.FORBIDDEN.value(), response.getBody().getStatus());
+        assertEquals("FORBIDDEN", response.getBody().getError());
+        assertEquals("You do not have permission to perform this action.", response.getBody().getMessage());
+        assertEquals("/v1/tariffs", response.getBody().getPath());
+        assertNotNull(response.getBody().getTimestamp());
+    }
+
+    @Test
     @DisplayName("Debe manejar cualquier excepcion no controlada devolviendo 500 sin exponer detalles internos")
     void shouldHandleUnexpectedException() {
-        RuntimeException exception = new RuntimeException("connection refused by database driver XYZ");
+        RuntimeException exception = new RuntimeException("Simulated internal failure: database driver crashed");
 
         ResponseEntity<ErrorResponse> response =
                 exceptionAdapter.handleUnexpected(exception, requestTo("/v1/tariffs"));
@@ -179,8 +198,10 @@ class CustomizedExceptionAdapterTest {
         assertNotNull(response);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getBody().getStatus());
         assertEquals("INTERNAL_SERVER_ERROR", response.getBody().getError());
         assertEquals("An unexpected error occurred. Please try again later.", response.getBody().getMessage());
+        // La propiedad clave: el mensaje interno NUNCA se filtra al cliente.
         assertTrue(!response.getBody().getMessage().contains("database driver"));
     }
 }
