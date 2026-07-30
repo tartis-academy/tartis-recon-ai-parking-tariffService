@@ -185,19 +185,7 @@ public class CustomizedExceptionAdapter {
     }
 
 
-    /**
-     * Catch-all: cualquier excepcion no controlada explicitamente
-     * (errores de infraestructura, NullPointerException, fallos de BD,
-     * etc.). Se registra el detalle completo en el log del servidor, pero
-     * al cliente solo se le devuelve un ErrorResponse generico y seguro,
-     * evitando exponer detalles internos o stacktraces.
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled exception while processing request [{} {}]", request.getMethod(), request.getRequestURI(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred. Please try again later.", request);
-    }
+
 
     private String formatValidationError(ObjectError error) {
         if (error instanceof FieldError fieldError) {
