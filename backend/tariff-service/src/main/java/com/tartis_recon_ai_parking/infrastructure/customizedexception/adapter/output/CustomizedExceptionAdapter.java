@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -184,17 +185,41 @@ public class CustomizedExceptionAdapter {
                 "The service is temporarily unavailable. Please try again shortly.", request);
     }
 
+    // ==================== Seguridad ====================
 
     /**
-     * Catch-all: cualquier excepcion no controlada explicitamente
-     * (errores de infraestructura, NullPointerException, fallos de BD,
-     * etc.). Se registra el detalle completo en el log del servidor, pero
-     * al cliente solo se le devuelve un ErrorResponse generico y seguro,
-     * evitando exponer detalles internos o stacktraces.
+     * SEC-10: acceso denegado por @PreAuthorize. Sin este handler, la
+     * AccessDeniedException era capturada por el catch-all de Exception.class
+     * y convertida en un 500 — o, si se borraba el catch-all, propagada al
+     * ExceptionTranslationFilter que devuelve un 403 con cuerpo vacio/Boot.
+     * Aqui devolvemos el mismo ErrorResponse que el resto de la API.
+     *
+     * Spring resuelve por proximidad de tipo: AccessDeniedException gana
+     * siempre sobre Exception.class, asi que ambos handlers conviven sin
+     * conflicto.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Acceso denegado en [{} {}]", request.getMethod(), request.getRequestURI());
+        return buildResponse(HttpStatus.FORBIDDEN,
+                "You do not have permission to perform this action.", request);
+    }
+
+    // ==================== Catch-all ====================
+
+    /**
+     * RED DE SEGURIDAD FINAL. Cualquier excepcion no prevista (un NPE en
+     * un mapper, un fallo de serializacion, una excepcion de terceros no
+     * contemplada) acaba aqui. Garantias:
+     *   1. El cliente siempre recibe un ErrorResponse conforme al contrato.
+     *   2. NUNCA se exponen detalles internos ni stacktraces al exterior.
+     *   3. Se registra la excepcion completa en el log del servidor para
+     *      depuracion.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled exception while processing request [{} {}]", request.getMethod(), request.getRequestURI(), ex);
+        log.error("Unhandled exception while processing request [{} {}]",
+                request.getMethod(), request.getRequestURI(), ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred. Please try again later.", request);
     }

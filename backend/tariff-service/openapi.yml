@@ -33,8 +33,9 @@ info:
     tier logic inside stay-service — confirm this split with the team
     before implementing StayTariffPort.
 
-    Admin endpoints are unauthenticated in Phase 1 (HU-07 / RN-02 out of
-    scope, see bearerAuth scheme below).
+    All endpoints require a valid JWT bearer token (Keycloak). Role-based
+    access is enforced via @PreAuthorize (SEC-10); see the security matrix
+    in docs/SEC-03 for the full ADMIN / OPERARIO / SERVICE breakdown.
   version: 1.0.0
   contact:
     name: TARTIS Recon-AI - Team Parking
@@ -45,6 +46,9 @@ servers:
 tags:
   - name: tariffs
     description: Tariff management and amount calculation
+
+security:
+  - bearerAuth: []
 
 paths:
   /tariffs:
@@ -87,6 +91,10 @@ paths:
                 $ref: '#/components/schemas/TariffPage'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
         '503':
@@ -110,6 +118,10 @@ paths:
                 $ref: '#/components/schemas/TariffResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
         '500':
@@ -131,6 +143,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TariffResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -158,6 +174,10 @@ paths:
                 $ref: '#/components/schemas/TariffResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -183,6 +203,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TariffResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
@@ -210,6 +234,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TariffResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No active tariff configured for the given vehicle type
           content:
@@ -245,6 +273,10 @@ paths:
                 $ref: '#/components/schemas/CalculateAmountResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           description: No active tariff configured for the given vehicle type
           content:
@@ -424,6 +456,22 @@ components:
         The request conflicts with the current state of the resource: the
         tariff name is already taken, or a concurrent modification was
         detected (deadlock / optimistic lock). The client may retry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: >
+        No valid JWT bearer token was provided. The client must
+        authenticate via Keycloak before retrying.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: >
+        The authenticated principal does not have the required role
+        (ADMIN, OPERARIO, or SERVICE) for this operation.
       content:
         application/json:
           schema:
