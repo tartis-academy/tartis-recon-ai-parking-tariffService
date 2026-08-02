@@ -7,12 +7,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.BadJwtException;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -42,6 +47,7 @@ class SecurityConfigTest {
     @MockitoBean private DeactivateTariffUseCase deactivateTariffUseCase;
     @MockitoBean private TariffRestMapper mapper;
     @MockitoBean private PriceCalculateUseCase priceCalculator;
+    @MockitoBean private JwtDecoder jwtDecoder;
 
     @BeforeEach
     void setUp() {
@@ -56,7 +62,23 @@ class SecurityConfigTest {
         mockMvc.perform(get("/v1/tariffs"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.error").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Authentication token is missing, invalid, or expired."))
+                .andExpect(jsonPath("$.path").value("/v1/tariffs"));
+    }
+
+    @Test
+    @DisplayName("SEC-11: Con JWT sintácticamente inválido, el resource server enruta a CustomizedExceptionAdapter → 401 con ErrorResponse")
+    void shouldReturn401WithErrorResponseWhenMalformedJwt() throws Exception {
+        when(jwtDecoder.decode(anyString())).thenThrow(new BadJwtException("Invalid or expired JWT"));
+
+        mockMvc.perform(get("/v1/tariffs")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer not-a-jwt"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Authentication token is missing, invalid, or expired."))
+                .andExpect(jsonPath("$.path").value("/v1/tariffs"));
     }
 
     @Test
@@ -66,6 +88,8 @@ class SecurityConfigTest {
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.error").value("FORBIDDEN"));
+                .andExpect(jsonPath("$.error").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("You do not have permission to perform this action."))
+                .andExpect(jsonPath("$.path").value("/v1/tariffs"));
     }
 }
