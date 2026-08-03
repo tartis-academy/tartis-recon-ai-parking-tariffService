@@ -674,11 +674,77 @@ class TariffRestAdapterTest {
     }
 
     @Test
-    @DisplayName("Debe rechazar con 401 una peticion sin token")
+    @DisplayName("Debe rechazar con 401 una peticion GET /v1/tariffs sin token")
     void shouldReturn401WhenNoTokenProvided() throws Exception {
         mockMvc.perform(get("/v1/tariffs"))
                 .andExpect(status().isUnauthorized());
 
         verify(getAllTariffsUseCase, never()).execute();
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 POST /v1/tariffs sin token")
+    void shouldReturn401OnCreateWithoutToken() throws Exception {
+        TariffCreateRequest request = new TariffCreateRequest("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        mockMvc.perform(post("/v1/tariffs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(createTariffUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 GET /v1/tariffs/{id} sin token")
+    void shouldReturn401OnGetByIdWithoutToken() throws Exception {
+        mockMvc.perform(get("/v1/tariffs/{id}", UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+
+        verify(getTariffUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 PUT /v1/tariffs/{id} sin token")
+    void shouldReturn401OnUpdateWithoutToken() throws Exception {
+        TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        mockMvc.perform(put("/v1/tariffs/{id}", UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(updateTariffUseCase, never()).execute(any(), any());
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 PATCH /v1/tariffs/{id}/status sin token")
+    void shouldReturn401OnStatusChangeWithoutToken() throws Exception {
+        TariffStatusRequest request = new TariffStatusRequest(true);
+        mockMvc.perform(patch("/v1/tariffs/{id}/status", UUID.randomUUID())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(activateTariffUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 GET /v1/tariffs/active sin token")
+    void shouldReturn401OnGetActiveWithoutToken() throws Exception {
+        mockMvc.perform(get("/v1/tariffs/active").param("type", "CAR"))
+                .andExpect(status().isUnauthorized());
+
+        verify(getActiveTariffUseCase, never()).execute(any());
+    }
+
+    @Test
+    @DisplayName("Debe rechazar con 401 POST /v1/tariffs/calculate sin token")
+    void shouldReturn401OnCalculateWithoutToken() throws Exception {
+        TariffPriceRequest request = new TariffPriceRequest(VehicleType.CAR, 60);
+        mockMvc.perform(post("/v1/tariffs/calculate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+
+        verify(priceCalculator, never()).execute(any(), anyInt());
     }
 }
