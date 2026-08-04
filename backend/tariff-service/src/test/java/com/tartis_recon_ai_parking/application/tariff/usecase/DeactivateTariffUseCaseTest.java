@@ -63,6 +63,7 @@ class DeactivateTariffUseCaseTest {
 
         assertEquals("TariffChangedEvent", published.type());
         assertEquals(id, published.data().tariffId());
+        assertEquals(VehicleType.CAR, published.data().vehicleType());
         assertFalse(published.data().active());
     }
 

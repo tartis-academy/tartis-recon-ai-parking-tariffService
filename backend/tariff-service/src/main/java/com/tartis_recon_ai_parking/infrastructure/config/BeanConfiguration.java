@@ -70,7 +70,7 @@ public class BeanConfiguration {
 
     @Bean
     public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-    return new UpdateTariffUseCase(tariffPersistence, eventPublisher);
+        return new UpdateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean

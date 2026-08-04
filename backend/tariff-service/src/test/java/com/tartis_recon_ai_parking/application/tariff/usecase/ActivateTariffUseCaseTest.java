@@ -63,6 +63,7 @@ class ActivateTariffUseCaseTest {
 
         assertEquals("TariffChangedEvent", published.type());
         assertEquals(id, published.data().tariffId());
+        assertEquals(VehicleType.CAR, published.data().vehicleType());
         assertTrue(published.data().active());
     }
 

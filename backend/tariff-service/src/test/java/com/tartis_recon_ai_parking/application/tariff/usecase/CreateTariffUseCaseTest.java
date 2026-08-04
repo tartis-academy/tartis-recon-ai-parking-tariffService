@@ -68,6 +68,7 @@ class CreateTariffUseCaseTest {
         assertEquals("TariffChangedEvent", published.type());
         assertEquals(expectedId, published.data().tariffId());
         assertEquals("Standard", published.data().name());
+        assertEquals(VehicleType.CAR, published.data().vehicleType());
     }
 
     @Test

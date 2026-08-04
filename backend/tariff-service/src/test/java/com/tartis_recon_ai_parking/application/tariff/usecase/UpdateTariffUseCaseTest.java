@@ -71,6 +71,7 @@ class UpdateTariffUseCaseTest {
         assertEquals("v1", published.version());
         assertEquals(id, published.data().tariffId());
         assertEquals("Premium", published.data().name());
+        assertEquals(VehicleType.CAR, published.data().vehicleType());
         assertEquals(new BigDecimal("0.08"), published.data().pricePerMinute());
         assertEquals(new BigDecimal("3.0"), published.data().basePrice());
     }
