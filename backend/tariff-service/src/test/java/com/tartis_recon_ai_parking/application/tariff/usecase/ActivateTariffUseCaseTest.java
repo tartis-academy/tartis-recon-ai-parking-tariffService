@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.tartis_recon_ai_parking.application.tariff.dto.TariffChangedEvent;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
+import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPublisher;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
@@ -12,6 +14,7 @@ import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundExcepti
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,7 +23,10 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +36,9 @@ class ActivateTariffUseCaseTest {
     @Mock
     private TariffPersistence tariffPersistence;
 
+    @Mock
+    private TariffEventPublisher eventPublisher;
+
     @InjectMocks
     private ActivateTariffUseCase activateTariffUseCase;
 
@@ -38,7 +47,7 @@ class ActivateTariffUseCaseTest {
     void shouldActivateTariff() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
-        
+
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -47,6 +56,14 @@ class ActivateTariffUseCaseTest {
         assertNotNull(result);
         assertTrue(result.isActive());
         verify(tariffPersistence).save(any(Tariff.class));
+
+        ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
+        verify(eventPublisher).publish(eventCaptor.capture());
+        TariffChangedEvent published = eventCaptor.getValue();
+
+        assertEquals("TariffChangedEvent", published.type());
+        assertEquals(id, published.data().tariffId());
+        assertTrue(published.data().active());
     }
 
     @Test
@@ -56,5 +73,22 @@ class ActivateTariffUseCaseTest {
         when(tariffPersistence.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(TariffNotFoundException.class, () -> activateTariffUseCase.execute(id));
+    }
+
+    @Test
+    @DisplayName("Si publicar TariffChangedEvent falla, se registra pero no se propaga: la tarifa ya se activo")
+    void shouldSwallowEventPublishFailure() {
+        UUID id = UUID.randomUUID();
+        Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
+
+        when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
+        when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        doThrow(new IllegalStateException("rabbitmq no disponible"))
+                .when(eventPublisher).publish(any(TariffChangedEvent.class));
+
+        TariffDTO result = assertDoesNotThrow(() -> activateTariffUseCase.execute(id));
+
+        assertTrue(result.isActive());
+        verify(eventPublisher).publish(any(TariffChangedEvent.class));
     }
 }
