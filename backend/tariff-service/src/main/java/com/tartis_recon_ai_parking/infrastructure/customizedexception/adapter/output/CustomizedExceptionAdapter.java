@@ -190,8 +190,6 @@ public class CustomizedExceptionAdapter {
 
     /**
      * HTTP 401 Unauthorized: El token de autenticación está ausente, es inválido o ha caducado.
-     * <p>
-     * Diagnóstico para el equipo: El problema reside en la forma en que el frontend envía el token de autenticación.
      */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(AuthenticationException ex, HttpServletRequest request) {
@@ -202,8 +200,6 @@ public class CustomizedExceptionAdapter {
 
     /**
      * HTTP 403 Forbidden: El token de autenticación es válido pero el usuario no posee el rol necesario.
-     * <p>
-     * Diagnóstico para el equipo: El problema reside en los roles configurados asignados a la identidad.
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {

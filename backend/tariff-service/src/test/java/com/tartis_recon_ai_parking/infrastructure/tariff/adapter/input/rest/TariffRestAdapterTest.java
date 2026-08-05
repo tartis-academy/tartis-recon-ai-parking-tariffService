@@ -15,20 +15,29 @@ import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.TariffResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.RequestBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -673,12 +682,56 @@ class TariffRestAdapterTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
-    @DisplayName("Debe rechazar con 401 una peticion sin token")
-    void shouldReturn401WhenNoTokenProvided() throws Exception {
-        mockMvc.perform(get("/v1/tariffs"))
-                .andExpect(status().isUnauthorized());
+    // --- SEC-12: verificacion propia del resource server, no de negocio ---
+    //
+    // Un unico test parametrizado sobre los 7 endpoints del adaptador. El filtro de
+    // seguridad corta la peticion antes del DispatcherServlet, asi que ningun caso de
+    // uso ni mapper puede invocarse; el verifyNoInteractions sobre TODOS los
+    // colaboradores es la asercion con senal (si alguien rompe la cadena, el caso de
+    // uso del endpoint se invocaria y el test fallaria). Como la clase es @SpringBootTest
+    // (no un slice), el CustomizedExceptionAdapter esta en contexto y el ErrorResponse
+    // se materializa de verdad: aqui se blinda el contrato completo (cabecera
+    // WWW-Authenticate + status/error/message/path) que SEC-11 restauro en el 401.
 
-        verify(getAllTariffsUseCase, never()).execute();
+    @ParameterizedTest(name = "[{index}] 401 sin token en {1}")
+    @MethodSource("endpointsProtegidosSinToken")
+    @DisplayName("SEC-12: sin token, los 7 endpoints devuelven 401 con ErrorResponse y WWW-Authenticate, sin invocar casos de uso")
+    void shouldReturn401WhenNoTokenProvided(RequestBuilder request, String instance) throws Exception {
+        mockMvc.perform(request)
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, containsString("Bearer")))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Authentication token is missing, invalid, or expired."))
+                .andExpect(jsonPath("$.path").value(instance));
+
+        verifyNoInteractions(createTariffUseCase, getTariffUseCase, getAllTariffsUseCase,
+                getActiveTariffUseCase, updateTariffUseCase, activateTariffUseCase,
+                deactivateTariffUseCase, mapper, priceCalculator);
+    }
+
+    static Stream<Arguments> endpointsProtegidosSinToken() {
+        UUID id = UUID.randomUUID();
+        String createBody = "{\"name\":\"Standard\",\"type\":\"CAR\",\"pricePerMinute\":0.05,\"basePrice\":2.0,\"active\":true}";
+        String updateBody = "{\"name\":\"Premium\",\"pricePerMinute\":0.08,\"basePrice\":3.0}";
+        String statusBody = "{\"active\":true}";
+        String calculateBody = "{\"type\":\"CAR\",\"minutes\":60}";
+        return Stream.of(
+                arguments(get("/v1/tariffs"), "/v1/tariffs"),
+                arguments(get("/v1/tariffs/active").param("type", "CAR"), "/v1/tariffs/active"),
+                arguments(get("/v1/tariffs/{id}", id), "/v1/tariffs/" + id),
+                arguments(post("/v1/tariffs")
+                                .contentType(MediaType.APPLICATION_JSON).content(createBody),
+                        "/v1/tariffs"),
+                arguments(put("/v1/tariffs/{id}", id)
+                                .contentType(MediaType.APPLICATION_JSON).content(updateBody),
+                        "/v1/tariffs/" + id),
+                arguments(patch("/v1/tariffs/{id}/status", id)
+                                .contentType(MediaType.APPLICATION_JSON).content(statusBody),
+                        "/v1/tariffs/" + id + "/status"),
+                arguments(post("/v1/tariffs/calculate")
+                                .contentType(MediaType.APPLICATION_JSON).content(calculateBody),
+                        "/v1/tariffs/calculate")
+        );
     }
 }
