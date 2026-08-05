@@ -1,6 +1,7 @@
 package com.tartis_recon_ai_parking.infrastructure.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPublisher;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.application.tariff.usecase.ActivateTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.CreateTariffUseCase;
@@ -38,18 +39,18 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence) {
-        return new ActivateTariffUseCase(tariffPersistence);
+    public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
+        return new ActivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
-    public CreateTariffUseCase createTariffUseCase(TariffPersistence tariffPersistence) {
-        return new CreateTariffUseCase(tariffPersistence);
+    public CreateTariffUseCase createTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
+        return new CreateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
-    public DeactivateTariffUseCase deactivateTariffUseCase(TariffPersistence tariffPersistence) {
-        return new DeactivateTariffUseCase(tariffPersistence);
+    public DeactivateTariffUseCase deactivateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
+        return new DeactivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
@@ -68,8 +69,8 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence) {
-        return new UpdateTariffUseCase(tariffPersistence);
+    public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
+        return new UpdateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
