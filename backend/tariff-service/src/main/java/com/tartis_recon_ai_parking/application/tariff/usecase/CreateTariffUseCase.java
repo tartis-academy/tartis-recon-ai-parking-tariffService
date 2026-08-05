@@ -41,7 +41,7 @@ public class CreateTariffUseCase {
 
         // IN-17 Swap logic for creation
         if (tariff.isActive()) {
-            List<Tariff> activeTariffs = tariffPersistence.findActiveByType(tariff.getType());
+            List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(tariff.getType());
             for (Tariff activeTariff : activeTariffs) {
                 Tariff deactivated = activeTariff.deactivate();
                 tariffPersistence.save(deactivated);

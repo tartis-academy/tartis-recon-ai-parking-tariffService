@@ -21,4 +21,8 @@ public interface TariffRepository extends JpaRepository<TariffEntity, UUID> {
     // Método para buscar activas por tipo
     List<TariffEntity> findByActiveTrueAndType(VehicleType type);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT t FROM TariffEntity t WHERE t.active = true AND t.type = :type")
+    List<TariffEntity> findByActiveTrueAndTypeForUpdate(@org.springframework.data.repository.query.Param("type") VehicleType type);
+
 }

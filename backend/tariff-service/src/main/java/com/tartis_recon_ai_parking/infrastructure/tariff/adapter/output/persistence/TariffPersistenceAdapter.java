@@ -100,6 +100,13 @@ public class TariffPersistenceAdapter implements TariffPersistence {
                         .map(tariffPersistenceMapper::toDomain).toList());
     }
 
+    @Override
+    public List<Tariff> findActiveByTypeForUpdate(VehicleType type) {
+        return execute("findActiveByTypeForUpdate",
+                () -> tariffRepository.findByActiveTrueAndTypeForUpdate(type).stream()
+                        .map(tariffPersistenceMapper::toDomain).toList());
+    }
+
     /**
      * El orden de los catch importa: Java exige subclase antes que
      * superclase, y ademas queremos distinguir lo reintentable (409/503)

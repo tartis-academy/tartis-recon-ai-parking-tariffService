@@ -62,7 +62,7 @@ class CreateTariffUseCaseTest {
         assertEquals(expectedId, result.getUniqueId());
         
         verify(tariffPersistence).save(any(Tariff.class));
-        verify(tariffPersistence, never()).findActiveByType(any());
+        verify(tariffPersistence, never()).findActiveByTypeForUpdate(any());
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
         verify(eventPublisher).publish(eventCaptor.capture());
@@ -83,7 +83,7 @@ class CreateTariffUseCaseTest {
         Tariff savedTariff = Tariff.reconstruct(expectedId, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         Tariff otherActiveTariff = Tariff.reconstruct(UUID.randomUUID(), "Other", VehicleType.CAR, new BigDecimal("0.10"), new BigDecimal("3.0"), true);
 
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(otherActiveTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(otherActiveTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenReturn(savedTariff);
 
         TariffDTO result = createTariffUseCase.execute(createDto);

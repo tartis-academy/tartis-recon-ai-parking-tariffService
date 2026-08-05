@@ -32,7 +32,7 @@ public class ActivateTariffUseCase {
                 .orElseThrow(() -> new TariffNotFoundException(id));
 
         // IN-17 Swap logic
-        List<Tariff> activeTariffs = tariffPersistence.findActiveByType(existing.getType());
+        List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(existing.getType());
         for (Tariff activeTariff : activeTariffs) {
             if (!activeTariff.getUniqueId().equals(existing.getUniqueId())) {
                 Tariff deactivated = activeTariff.deactivate();

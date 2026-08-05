@@ -51,7 +51,7 @@ class DeactivateTariffUseCaseTest {
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         Tariff otherTariff = Tariff.reconstruct(UUID.randomUUID(), "Other", VehicleType.CAR, new BigDecimal("0.10"), new BigDecimal("3.0"), true);
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(existingTariff, otherTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(existingTariff, otherTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TariffDTO result = deactivateTariffUseCase.execute(id);
@@ -77,7 +77,7 @@ class DeactivateTariffUseCaseTest {
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
         
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(existingTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(existingTariff));
 
         assertThrows(TariffConstraintException.class, () -> deactivateTariffUseCase.execute(id));
     }

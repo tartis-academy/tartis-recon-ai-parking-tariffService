@@ -40,17 +40,17 @@ public class BeanConfiguration {
 
     @Bean
     public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new ActivateTariffUseCase(tariffPersistence, eventPublisher);
+        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalActivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
     public CreateTariffUseCase createTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new CreateTariffUseCase(tariffPersistence, eventPublisher);
+        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalCreateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
     public DeactivateTariffUseCase deactivateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new DeactivateTariffUseCase(tariffPersistence, eventPublisher);
+        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalDeactivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean

@@ -34,7 +34,7 @@ public class DeactivateTariffUseCase {
 
         // IN-17 Lifecycle protection: Block deactivation if it's the last active tariff
         if (existing.isActive()) {
-            List<Tariff> activeTariffs = tariffPersistence.findActiveByType(existing.getType());
+            List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(existing.getType());
             
             // Check if this is the only active one
             if (activeTariffs.size() == 1 && activeTariffs.get(0).getUniqueId().equals(existing.getUniqueId())) {

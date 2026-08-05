@@ -54,7 +54,7 @@ class ActivateTariffUseCaseTest {
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
         Tariff otherActiveTariff = Tariff.reconstruct(UUID.randomUUID(), "Other", VehicleType.CAR, new BigDecimal("0.10"), new BigDecimal("3.0"), true);
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(otherActiveTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(otherActiveTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TariffDTO result = activateTariffUseCase.execute(id);
