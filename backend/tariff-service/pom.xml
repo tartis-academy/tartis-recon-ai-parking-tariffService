@@ -44,6 +44,10 @@
 			<artifactId>spring-boot-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
 
 		<!-- SEC-07: resource server OAuth2 contra el realm de Keycloak, replicado
 		     de vehicle-service (SEC-04/SEC-05). -->
