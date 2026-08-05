@@ -5,8 +5,6 @@ All notable changes to the `tariff-service` microservice will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## [2.0.0] - 2026-08-04
 
 ### Added
@@ -48,6 +46,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Persistencia PostgreSQL:** Configuración JPA con esquema `tariff`.
 - **Contrato OpenAPI:** Especificación en `openapi.yml`.
 
-[Unreleased]: https://github.com/tartis-academy/tartis-recon-ai-parking-tariffService/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/tartis-academy/tartis-recon-ai-parking-tariffService/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/tartis-academy/tartis-recon-ai-parking-tariffService/releases/tag/v1.0.0
