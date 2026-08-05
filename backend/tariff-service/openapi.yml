@@ -47,6 +47,9 @@ tags:
   - name: tariffs
     description: Tariff management and amount calculation
 
+# Todas las operaciones requieren token JWT (bearerAuth). Solo el health check
+# de actuator (/actuator/health) es publico y queda fuera de este contrato.
+# SEC-13: securityScheme aplicado a nivel de documento.
 security:
   - bearerAuth: []
 
