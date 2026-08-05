@@ -124,6 +124,16 @@ public class CustomizedExceptionAdapter {
     }
 
     /**
+     * Violacion de restricciones del dominio de tarifas (ej. intentar
+     * desactivar la unica tarifa activa).
+     */
+    @ExceptionHandler(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException.class)
+    public ResponseEntity<ErrorResponse> handleTariffConstraint(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException ex,
+                                                                   HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    /**
      * Conflicto de concurrencia (deadlock, lock optimista). El cliente
      * puede reintentar y tiene sentido que lo haga.
      */

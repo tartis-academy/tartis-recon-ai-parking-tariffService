@@ -9,6 +9,7 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -29,6 +30,15 @@ public class ActivateTariffUseCase {
     public TariffDTO execute(UUID id) {
         Tariff existing = tariffPersistence.findById(id)
                 .orElseThrow(() -> new TariffNotFoundException(id));
+
+        // IN-17 Swap logic
+        List<Tariff> activeTariffs = tariffPersistence.findActiveByType(existing.getType());
+        for (Tariff activeTariff : activeTariffs) {
+            if (!activeTariff.getUniqueId().equals(existing.getUniqueId())) {
+                Tariff deactivated = activeTariff.deactivate();
+                tariffPersistence.save(deactivated);
+            }
+        }
 
         Tariff activated = existing.activate();
         Tariff saved = tariffPersistence.save(activated);
