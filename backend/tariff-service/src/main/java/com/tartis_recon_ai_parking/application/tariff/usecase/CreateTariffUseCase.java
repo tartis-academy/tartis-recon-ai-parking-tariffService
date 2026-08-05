@@ -1,18 +1,29 @@
 package com.tartis_recon_ai_parking.application.tariff.usecase;
 
+import com.tartis_recon_ai_parking.application.tariff.dto.TariffChangedEvent;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffCreateDTO;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.factory.TariffDTOFactory;
+import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPublisher;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
 
+import java.time.Instant;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CreateTariffUseCase {
 
-    private final TariffPersistence tariffPersistence;
+    private static final Logger log = LoggerFactory.getLogger(CreateTariffUseCase.class);
 
-    public CreateTariffUseCase(TariffPersistence tariffPersistence) {
+    private final TariffPersistence tariffPersistence;
+    private final TariffEventPublisher eventPublisher;
+
+    public CreateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
         this.tariffPersistence = tariffPersistence;
+        this.eventPublisher = eventPublisher;
     }
 
     public TariffDTO execute(TariffCreateDTO createDTO) {
@@ -27,6 +38,15 @@ public class CreateTariffUseCase {
 
         Tariff tariff = TariffDTOFactory.toDomain(createDTO);
         Tariff saved = tariffPersistence.save(tariff);
+        publishTariffChangedEventQuietly(saved);
         return TariffDTOFactory.toDTO(saved);
+    }
+
+    private void publishTariffChangedEventQuietly(Tariff tariff) {
+        try {
+            eventPublisher.publish(TariffChangedEvent.of(tariff, Instant.now()));
+        } catch (RuntimeException e) {
+            log.error("No se pudo publicar el evento de cambio de tarifa para el ID: {}", tariff.getUniqueId(), e);
+        }
     }
 }

@@ -1,19 +1,29 @@
 package com.tartis_recon_ai_parking.application.tariff.usecase;
 
+import com.tartis_recon_ai_parking.application.tariff.dto.TariffChangedEvent;
 import com.tartis_recon_ai_parking.application.tariff.dto.TariffDTO;
 import com.tartis_recon_ai_parking.application.tariff.factory.TariffDTOFactory;
+import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPublisher;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 
+import java.time.Instant;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeactivateTariffUseCase {
 
-    private final TariffPersistence tariffPersistence;
+    private static final Logger log = LoggerFactory.getLogger(DeactivateTariffUseCase.class);
 
-    public DeactivateTariffUseCase(TariffPersistence tariffPersistence) {
+    private final TariffPersistence tariffPersistence;
+    private final TariffEventPublisher eventPublisher;
+
+    public DeactivateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
         this.tariffPersistence = tariffPersistence;
+        this.eventPublisher = eventPublisher;
     }
 
     public TariffDTO execute(UUID id) {
@@ -22,6 +32,15 @@ public class DeactivateTariffUseCase {
 
         Tariff deactivated = existing.deactivate();
         Tariff saved = tariffPersistence.save(deactivated);
+        publishTariffChangedEventQuietly(saved);
         return TariffDTOFactory.toDTO(saved);
+    }
+
+    private void publishTariffChangedEventQuietly(Tariff tariff) {
+        try {
+            eventPublisher.publish(TariffChangedEvent.of(tariff, Instant.now()));
+        } catch (RuntimeException e) {
+            log.error("No se pudo publicar el evento de cambio de tarifa para el ID: {}", tariff.getUniqueId(), e);
+        }
     }
 }
