@@ -10,6 +10,7 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,17 @@ public class CreateTariffUseCase {
         }
 
         Tariff tariff = TariffDTOFactory.toDomain(createDTO);
+
+        // IN-17 Swap logic for creation
+        if (tariff.isActive()) {
+            List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(tariff.getType());
+            for (Tariff activeTariff : activeTariffs) {
+                Tariff deactivated = activeTariff.deactivate();
+                tariffPersistence.save(deactivated);
+                publishTariffChangedEventQuietly(deactivated);
+            }
+        }
+
         Tariff saved = tariffPersistence.save(tariff);
         publishTariffChangedEventQuietly(saved);
         return TariffDTOFactory.toDTO(saved);

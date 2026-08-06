@@ -11,6 +11,7 @@ import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersiste
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,12 +45,13 @@ class DeactivateTariffUseCaseTest {
     private DeactivateTariffUseCase deactivateTariffUseCase;
 
     @Test
-    @DisplayName("Debe desactivar una tarifa existente")
+    @DisplayName("Debe desactivar una tarifa existente si hay otras activas")
     void shouldDeactivateTariff() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-
+        Tariff otherTariff = Tariff.reconstruct(UUID.randomUUID(), "Other", VehicleType.CAR, new BigDecimal("0.10"), new BigDecimal("3.0"), true);
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(existingTariff, otherTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TariffDTO result = deactivateTariffUseCase.execute(id);
@@ -65,6 +68,18 @@ class DeactivateTariffUseCaseTest {
         assertEquals(id, published.data().tariffId());
         assertEquals(VehicleType.CAR, published.data().vehicleType());
         assertFalse(published.data().active());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar TariffConstraintException al intentar desactivar la unica tarifa activa")
+    void shouldThrowExceptionWhenDeactivatingLastActiveTariff() {
+        UUID id = UUID.randomUUID();
+        Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        
+        when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(existingTariff));
+
+        assertThrows(TariffConstraintException.class, () -> deactivateTariffUseCase.execute(id));
     }
 
     @Test

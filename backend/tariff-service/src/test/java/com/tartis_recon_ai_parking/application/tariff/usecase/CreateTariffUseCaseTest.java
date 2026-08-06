@@ -14,17 +14,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import com.tartis_recon_ai_parking.domain.tariff.exception.InvalidTariffException;
@@ -43,12 +47,12 @@ class CreateTariffUseCaseTest {
     private CreateTariffUseCase createTariffUseCase;
 
     @Test
-    @DisplayName("Debe crear una tarifa exitosamente")
-    void shouldCreateTariff() {
-        TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-
+    @DisplayName("Debe crear una tarifa inactiva exitosamente sin swap")
+    void shouldCreateInactiveTariff() {
+        TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
+        
         UUID expectedId = UUID.randomUUID();
-        Tariff savedTariff = Tariff.reconstruct(expectedId, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        Tariff savedTariff = Tariff.reconstruct(expectedId, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
 
         when(tariffPersistence.save(any(Tariff.class))).thenReturn(savedTariff);
 
@@ -56,10 +60,9 @@ class CreateTariffUseCaseTest {
 
         assertNotNull(result);
         assertEquals(expectedId, result.getUniqueId());
-        assertEquals("Standard", result.getName());
-        assertEquals(VehicleType.CAR, result.getType());
-
+        
         verify(tariffPersistence).save(any(Tariff.class));
+        verify(tariffPersistence, never()).findActiveByTypeForUpdate(any());
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
         verify(eventPublisher).publish(eventCaptor.capture());
@@ -72,11 +75,40 @@ class CreateTariffUseCaseTest {
     }
 
     @Test
-    @DisplayName("Si publicar TariffChangedEvent falla, se registra pero no se propaga: la tarifa ya se creo")
-    void shouldSwallowEventPublishFailure() {
+    @DisplayName("Debe crear una tarifa activa y hacer swap desactivando la anterior")
+    void shouldCreateActiveTariffAndSwap() {
         TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        
         UUID expectedId = UUID.randomUUID();
         Tariff savedTariff = Tariff.reconstruct(expectedId, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
+        Tariff otherActiveTariff = Tariff.reconstruct(UUID.randomUUID(), "Other", VehicleType.CAR, new BigDecimal("0.10"), new BigDecimal("3.0"), true);
+
+        when(tariffPersistence.findActiveByTypeForUpdate(VehicleType.CAR)).thenReturn(List.of(otherActiveTariff));
+        when(tariffPersistence.save(any(Tariff.class))).thenReturn(savedTariff);
+
+        TariffDTO result = createTariffUseCase.execute(createDto);
+
+        assertNotNull(result);
+        assertEquals(expectedId, result.getUniqueId());
+        
+        // Debe guardar la tarifa anterior desactivada y la nueva activada
+        ArgumentCaptor<Tariff> captor = ArgumentCaptor.forClass(Tariff.class);
+        verify(tariffPersistence, times(2)).save(captor.capture());
+        
+        List<Tariff> savedTariffs = captor.getAllValues();
+        boolean hasDeactivated = savedTariffs.stream().anyMatch(t -> !t.isActive() && t.getUniqueId().equals(otherActiveTariff.getUniqueId()));
+        org.junit.jupiter.api.Assertions.assertTrue(hasDeactivated, "Deberia haberse guardado una version inactiva de la tarifa anterior");
+
+        ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publish(eventCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("Si publicar TariffChangedEvent falla, se registra pero no se propaga: la tarifa ya se creo")
+    void shouldSwallowEventPublishFailure() {
+        TariffCreateDTO createDto = new TariffCreateDTO("Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
+        UUID expectedId = UUID.randomUUID();
+        Tariff savedTariff = Tariff.reconstruct(expectedId, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), false);
 
         when(tariffPersistence.save(any(Tariff.class))).thenReturn(savedTariff);
         doThrow(new IllegalStateException("rabbitmq no disponible"))

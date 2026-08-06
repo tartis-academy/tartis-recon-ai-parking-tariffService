@@ -31,10 +31,11 @@ class PriceCalculateUseCaseTest {
     private PriceCalculateUseCase priceCalculateUseCase;
 
     @Test
-    @DisplayName("Debe calcular el precio total usando la tarifa activa")
-    void shouldCalculatePriceUsingActiveTariff() {
+    @DisplayName("Debe calcular el precio total usando la tarifa por ID")
+    void shouldCalculatePriceUsingTariffId() {
+        java.util.UUID tariffId = java.util.UUID.randomUUID();
         Tariff tariff = Tariff.reconstruct(
-                java.util.UUID.randomUUID(),
+                tariffId,
                 "Standard",
                 VehicleType.CAR,
                 new BigDecimal("0.05"),
@@ -42,21 +43,22 @@ class PriceCalculateUseCaseTest {
                 true
         );
 
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of(tariff));
+        when(tariffPersistence.findById(tariffId)).thenReturn(java.util.Optional.of(tariff));
 
-        PriceTransferDTO result = priceCalculateUseCase.execute(VehicleType.CAR, 120);
+        PriceTransferDTO result = priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 120);
 
         assertNotNull(result);
         assertEquals(new BigDecimal("8.00"), result.price());
 
-        verify(tariffPersistence).findActiveByType(VehicleType.CAR);
+        verify(tariffPersistence).findById(tariffId);
     }
 
     @Test
-    @DisplayName("Debe lanzar excepcion cuando no existe una tarifa activa para el tipo")
-    void shouldThrowExceptionWhenNoActiveTariffExists() {
-        when(tariffPersistence.findActiveByType(VehicleType.CAR)).thenReturn(List.of());
+    @DisplayName("Debe lanzar excepcion cuando no existe la tarifa por ID")
+    void shouldThrowExceptionWhenNoTariffExists() {
+        java.util.UUID tariffId = java.util.UUID.randomUUID();
+        when(tariffPersistence.findById(tariffId)).thenReturn(java.util.Optional.empty());
 
-        assertThrows(TariffNotFoundException.class, () -> priceCalculateUseCase.execute(VehicleType.CAR, 60));
+        assertThrows(TariffNotFoundException.class, () -> priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 60));
     }
 }
