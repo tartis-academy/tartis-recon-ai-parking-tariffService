@@ -22,6 +22,8 @@ import com.tartis_recon_ai_parking.application.tariff.exception.PersistenceFailu
 import com.tartis_recon_ai_parking.application.tariff.exception.PersistenceUnavailableException;
 import com.tartis_recon_ai_parking.domain.tariff.exception.CorruptedTariffDataException;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.transaction.TransactionException;
@@ -50,8 +52,8 @@ public class CustomizedExceptionAdapter {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException ex, HttpServletRequest request) {
+    @ExceptionHandler(TariffTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(TariffTypeMismatchException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
      
@@ -132,8 +134,8 @@ public class CustomizedExceptionAdapter {
      * Violacion de restricciones del dominio de tarifas (ej. intentar
      * desactivar la unica tarifa activa).
      */
-    @ExceptionHandler(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException.class)
-    public ResponseEntity<ErrorResponse> handleTariffConstraint(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException ex,
+    @ExceptionHandler(TariffConstraintException.class)
+    public ResponseEntity<ErrorResponse> handleTariffConstraint(TariffConstraintException ex,
                                                                    HttpServletRequest request) {
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }

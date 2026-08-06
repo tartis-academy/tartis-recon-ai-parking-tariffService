@@ -11,9 +11,12 @@ import com.tartis_recon_ai_parking.application.tariff.usecase.GetAllTariffsUseCa
 import com.tartis_recon_ai_parking.application.tariff.usecase.GetTariffUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase;
 import com.tartis_recon_ai_parking.application.tariff.usecase.UpdateTariffUseCase;
+import com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalActivateTariffUseCase;
+import com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalCreateTariffUseCase;
+import com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalDeactivateTariffUseCase;
+import com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalUpdateTariffUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 
     // Necesario: en este proyecto JacksonAutoConfiguration no registra un
     // ObjectMapper para el contexto de TariffRestAdapterTest (@SpringBootTest),
@@ -40,17 +43,17 @@ public class BeanConfiguration {
 
     @Bean
     public ActivateTariffUseCase activateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalActivateTariffUseCase(tariffPersistence, eventPublisher);
+        return new TransactionalActivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
     public CreateTariffUseCase createTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalCreateTariffUseCase(tariffPersistence, eventPublisher);
+        return new TransactionalCreateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
     public DeactivateTariffUseCase deactivateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalDeactivateTariffUseCase(tariffPersistence, eventPublisher);
+        return new TransactionalDeactivateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
@@ -70,7 +73,7 @@ public class BeanConfiguration {
 
     @Bean
     public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalUpdateTariffUseCase(tariffPersistence, eventPublisher);
+        return new TransactionalUpdateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean
