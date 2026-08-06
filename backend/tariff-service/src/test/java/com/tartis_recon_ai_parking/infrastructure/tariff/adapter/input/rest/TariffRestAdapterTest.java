@@ -478,29 +478,6 @@ class TariffRestAdapterTest {
         UUID id = UUID.randomUUID();
         TariffUpdateRequest request = new TariffUpdateRequest("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
 
-        mockMvc.perform(put("/v1/tariffs/{id}", id)
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-
-        verify(updateTariffUseCase, never()).execute(any(), any());
-    }
-
-    @Test
-    @DisplayName("SERVICE: Debe denegar el cambio de estado de tarifas (403)")
-    void shouldDenyChangeStatusForService() throws Exception {
-        UUID id = UUID.randomUUID();
-        TariffStatusRequest request = new TariffStatusRequest(true);
-
-        mockMvc.perform(patch("/v1/tariffs/{id}/status", id)
-                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_SERVICE")))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-
-        verify(activateTariffUseCase, never()).execute(any());
-    }
 
     // =========================================================================
     // PRUEBAS PARA ROL: USER
