@@ -1,42 +1,26 @@
 openapi: 3.0.3
 info:
   title: tariff-service API
+  version: 1.1.0
   description: >
     Manages tariff configuration per vehicle type (HU-04) and exposes the
     pricing calculation used synchronously by stay-service during
     check-out.
 
-    PRICING RULES applied by /tariffs/calculate:
-      RN-09 minimum charge & courtesy: 0.10 EUR access fee; first
-        courtesyMinutes (10) are included before per-minute billing starts.
-      RN-07 tiered rates: 0.03 EUR/min, 0.02 EUR/min once a full hour is
-        completed, 0.01 EUR/min once a full day is completed.
-      RN-08 staggered accumulation: amount already accrued in a lower tier
-        is preserved when crossing into the next tier; the new rate applies
-        only from that point forward (not retroactively to the whole
-        duration).
-      RN-06 total minutes are rounded up in the system's favor (rounding
-        itself happens in stay-service before calling this endpoint).
-    IN-08 invariant: at most one active tariff per vehicle type at any
-    given instant (no overlapping validity) — enforced by activating a new
-    tariff and deactivating the previous one for that vehicleType in the
-    same operation.
-
-    ASSUMPTION (flagged, not explicit in source docs): the technical
-    document states stay-service "calls tariff-service to get the current
-    tariff" and separately that check-out "calculates the amount (duration
-    x tariff)", without saying which service owns the tiered-pricing math
-    (RN-07/RN-08). This contract exposes both: GET /tariffs/current (raw
-    tariff data) and POST /tariffs/calculate (full RN-06..RN-09 calculation
-    server-side). Putting the calculation here keeps pricing logic in one
-    place (tariff-service's own domain) instead of duplicating RN-07/RN-08
-    tier logic inside stay-service — confirm this split with the team
-    before implementing StayTariffPort.
+    Tariff model is a LINEAR rate: basePrice plus pricePerMinute * elapsed
+    minutes (minutes are rounded up in the system's favor by stay-service,
+    RN-06, before calling /tariffs/calculate). At most one active tariff per
+    vehicle type holds at any time (IN-08): registering a new tariff that
+    will serve new stays is done by setting the desired `active` flag, and
+    toggling that flag is the mechanism that replaces the previous tariff
+    for the vehicle type.
 
     All endpoints require a valid JWT bearer token (Keycloak). Role-based
-    access is enforced via @PreAuthorize (SEC-10); see the security matrix
-    in docs/SEC-03 for the full ADMIN / OPERARIO / SERVICE breakdown.
-  version: 1.0.0
+    access is enforced via @PreAuthorize (SEC-10): read operations
+    (GET /tariffs, GET /tariffs/{id}, GET /tariffs/active) and price
+    calculation (POST /tariffs/calculate) allow ADMIN and OPERARIO;
+    management operations (POST /tariffs, PUT /tariffs/{id},
+    PATCH /tariffs/{id}/status) are ADMIN-only.
   contact:
     name: TARTIS Recon-AI - Team Parking
 
@@ -54,44 +38,30 @@ security:
   - bearerAuth: []
 
 paths:
-  /tariffs:
+  /tariffs/active:
     get:
       tags: [tariffs]
-      operationId: listTariffs
-      summary: Lists registered tariffs (HU-04 CA1)
+      operationId: getActiveTariffs
+      summary: Retrieves the active tariffs for a vehicle type (IN-08)
+      description: >
+        Returns a list with the currently active tariff(s) for the given
+        `type`; at most one active tariff per type exists (IN-08).
       parameters:
-        - name: vehicleType
+        - name: type
           in: query
-          required: false
+          required: true
+          description: Filter active tariffs by vehicle type
           schema:
             $ref: '#/components/schemas/VehicleType'
-        - name: active
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
-        - name: size
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 100
       responses:
         '200':
-          description: Page of tariffs
+          description: List of active tariffs
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TariffPage'
+                type: array
+                items:
+                  $ref: '#/components/schemas/TariffResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -100,12 +70,31 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
+
+  /tariffs:
+    get:
+      tags: [tariffs]
+      operationId: listTariffs
+      summary: Lists all registered tariffs (HU-04 CA1)
+      responses:
+        '200':
+          description: List of tariffs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TariffResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
     post:
       tags: [tariffs]
       operationId: createTariff
-      summary: Creates a new tariff (HU-04 CA3, CA4)
+      summary: Creates a new tariff (HU-04 CA3)
       requestBody:
         required: true
         content:
@@ -129,14 +118,12 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
-  /tariffs/{tariffId}:
+  /tariffs/{id}:
     get:
       tags: [tariffs]
       operationId: getTariff
-      summary: Retrieves a tariff by ID (HU-04 CA2)
+      summary: Retrieves a tariff by id (HU-04 CA2)
       parameters:
         - $ref: '#/components/parameters/TariffIdPath'
       responses:
@@ -154,12 +141,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
     put:
       tags: [tariffs]
       operationId: updateTariff
-      summary: Updates tariff data (HU-04 CA5)
+      summary: Updates a tariff (HU-04 CA5)
+      description: >
+        Updates editable fields (name, pricePerMinute, basePrice). The vehicle
+        type and the active flag are not modified here
+        (use PATCH /tariffs/{id}/status for the flag).
       parameters:
         - $ref: '#/components/parameters/TariffIdPath'
       requestBody:
@@ -187,25 +176,33 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
-  /tariffs/{tariffId}/deactivate:
+  /tariffs/{id}/status:
     patch:
       tags: [tariffs]
-      operationId: deactivateTariff
-      summary: >
-        Marks a tariff as inactive (HU-04 CA6). Inactive tariffs are never
-        used to calculate amounts for new stays (HU-04 CA7).
+      operationId: changeTariffStatus
+      summary: Activates or deactivates a tariff (HU-04 CA6)
+      description: >
+        The request body controls the target state: active=true activates the
+        tariff, active=false deactivates it. Inactive tariffs are never used
+        to calculate amounts for new stays (HU-04 CA7).
       parameters:
         - $ref: '#/components/parameters/TariffIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffStatusRequest'
       responses:
         '200':
-          description: Tariff deactivated
+          description: Tariff status changed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TariffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -216,64 +213,28 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-
-  /tariffs/active:
-    get:
-      tags: [tariffs]
-      operationId: getCurrentTariff
-      summary: Retrieves the currently active tariff for a vehicle type (IN-08)
-      parameters:
-        - name: vehicleType
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/VehicleType'
-      responses:
-        '200':
-          description: Active tariff for the given vehicle type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TariffResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: No active tariff configured for the given vehicle type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
   /tariffs/calculate:
     post:
       tags: [tariffs]
-      operationId: calculateAmount
+      operationId: calculatePrice
       summary: >
-        Calculates the amount for a stay applying RN-06 (rounded minutes),
-        RN-07/RN-08 (tiered, staggered rates) and RN-09 (minimum charge +
-        courtesy minutes). Called synchronously by stay-service at
-        check-out.
+        Calculates the price of a stay (basePrice + pricePerMinute * minutes)
+        for the given tariffId. Called synchronously by stay-service at
+        check-out with minutes already rounded up (RN-06).
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CalculateAmountRequest'
+              $ref: '#/components/schemas/TariffPriceRequest'
       responses:
         '200':
-          description: Calculated amount
+          description: Calculated price
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalculateAmountResponse'
+                $ref: '#/components/schemas/PriceResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -281,15 +242,13 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No active tariff configured for the given vehicle type
+          description: No tariff found for the given tariffId
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalError'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
 
 components:
   schemas:
@@ -299,114 +258,93 @@ components:
       description: Canonical enum from the domain model, shared with stay-service
       enum: [CAR, CAR_PMR, MOTORBIKE]
 
-    Tariff:
-      type: object
-      properties:
-        tariffId:
-          type: string
-          format: uuid
-        vehicleType:
-          $ref: '#/components/schemas/VehicleType'
-        minimumCharge:
-          type: number
-          format: double
-          example: 0.10
-          description: Access fee (RN-09)
-        courtesyMinutes:
-          type: integer
-          example: 10
-          description: Minutes included before per-minute billing starts (RN-09)
-        pricePerMinute:
-          type: number
-          format: double
-          example: 0.03
-          description: Rate applied before completing 1 hour (RN-07)
-        pricePerHourTier:
-          type: number
-          format: double
-          example: 0.02
-          description: Rate applied per minute once 1 hour is completed (RN-07)
-        pricePerDayTier:
-          type: number
-          format: double
-          example: 0.01
-          description: Rate applied per minute once 1 day is completed (RN-07)
-        active:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-
     TariffCreateRequest:
       type: object
-      required:
-        - vehicleType
-        - minimumCharge
-        - courtesyMinutes
-        - pricePerMinute
-        - pricePerHourTier
-        - pricePerDayTier
+      required: [name, type, pricePerMinute, basePrice, active]
       properties:
-        vehicleType:
+        name:
+          type: string
+          maxLength: 255
+        type:
           $ref: '#/components/schemas/VehicleType'
-        minimumCharge:
-          type: number
-          format: double
-        courtesyMinutes:
-          type: integer
         pricePerMinute:
           type: number
           format: double
-        pricePerHourTier:
+          exclusiveMinimum: true
+          minimum: 0
+          description: Price per minute, must be > 0
+        basePrice:
           type: number
           format: double
-        pricePerDayTier:
-          type: number
-          format: double
+          minimum: 0
+          description: Flat base price, must be >= 0
+        active:
+          type: boolean
 
     TariffUpdateRequest:
-      $ref: '#/components/schemas/TariffCreateRequest'
-
-    TariffResponse:
-      $ref: '#/components/schemas/Tariff'
-
-    TariffPage:
       type: object
+      required: [name, pricePerMinute, basePrice]
       properties:
-        content:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tariff'
-        page:
-          type: integer
-        size:
-          type: integer
-        totalElements:
-          type: integer
-          format: int64
-        totalPages:
-          type: integer
+        name:
+          type: string
+          maxLength: 255
+        pricePerMinute:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          description: Price per minute, must be > 0
+        basePrice:
+          type: number
+          format: double
+          minimum: 0
+          description: Flat base price, must be >= 0
 
-    CalculateAmountRequest:
+    TariffStatusRequest:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+          description: true activates the tariff, false deactivates it
+
+    TariffPriceRequest:
       type: object
       required: [tariffId, type, minutes]
       properties:
         tariffId:
           type: string
           format: uuid
+          description: The tariff to calculate against (the tarif associated to the stay)
         type:
           $ref: '#/components/schemas/VehicleType'
         minutes:
           type: integer
-          description: Already rounded up in the system's favor by stay-service (RN-06)
+          description: Total minutes, already rounded up by stay-service (RN-06)
 
-    CalculateAmountResponse:
+    TariffResponse:
       type: object
       properties:
-        tariffId:
+        id:
           type: string
           format: uuid
-        amount:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/VehicleType'
+        pricePerMinute:
+          type: number
+          format: double
+        basePrice:
+          type: number
+          format: double
+        active:
+          type: boolean
+
+    PriceResponse:
+      type: object
+      properties:
+        price:
           type: number
           format: double
 
@@ -427,11 +365,11 @@ components:
           example: "No active tariff for vehicle type CAR"
         path:
           type: string
-          example: "/v1/tariffs/current"
+          example: "/v1/tariffs/calculate"
 
   parameters:
     TariffIdPath:
-      name: tariffId
+      name: id
       in: path
       required: true
       schema:
@@ -459,11 +397,9 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     Conflict:
       description: >
-        The request conflicts with the current state of the resource: the
-        tariff name is already taken, a concurrent modification was
-        detected (deadlock / optimistic lock), or an attempt was made
-        to modify immutable price fields (IN-17). The client may retry
-        except for price modifications, which require a new tariff.
+        The request conflicts with the current state of the resource, e.g. a
+        concurrent modification was detected (optimistic lock). The client may
+        retry against the latest version.
       content:
         application/json:
           schema:
@@ -479,22 +415,7 @@ components:
     Forbidden:
       description: >
         The authenticated principal does not have the required role
-        (ADMIN, OPERARIO, or SERVICE) for this operation.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    ServiceUnavailable:
-      description: >
-        The service cannot reach its datastore (unavailable, or the query
-        timed out). This is transient; retry after the delay indicated in
-        the Retry-After header.
-      headers:
-        Retry-After:
-          description: Seconds to wait before retrying.
-          schema:
-            type: integer
-            example: 5
+        (ADMIN or OPERARIO) for this operation.
       content:
         application/json:
           schema:
