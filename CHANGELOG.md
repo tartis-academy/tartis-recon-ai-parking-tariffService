@@ -5,7 +5,7 @@ All notable changes to the `tariff-service` microservice will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-08-04
+## [1.0.0] - 2026-08-06
 
 ### Added
 - **Integración con Keycloak & Spring Security:** Configuración de OAuth2 Resource Server para la validación de Bearer Access Tokens emitidos por Keycloak y resolución de claves JWK (`KEYCLOAK_JWK_SET_URI`).
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Protección con `@PreAuthorize`:** Control de acceso en adaptadores REST.
 - **Escaneo Continuo de Vulnerabilidades:** Integración con Trivy (`docker-scan`) en el pipeline de CI/CD.
 
-## [0.5.0] - 2026-07-25
+## [0.5.0] - 2026-07-29
 
 ### Added
 - **MVP Inicial de `tariff-service`:** Implementación inicial de la arquitectura hexagonal para la gestión de tarifas.
