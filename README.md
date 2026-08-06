@@ -50,8 +50,8 @@ Los casos de uso encapsulan las reglas de negocio del dominio de tarifas:
 
 ## 4. Eventos publicados y consumidos
 
-- **Eventos publicados:**
-  - `TariffChangedEvent` / `SpringTariffChangedEvent`: Emisión de eventos de dominio ante cambios o desactivación de tarifas.
+- **Eventos publicados en RabbitMQ:**
+  - **`TariffChangedEvent` / `SpringTariffChangedEvent`:** Publicado en la Exchange `parking-events-exchange` con routing key `tariff-changed-v1` al crear, activar, modificar o desactivar una tarifa (`TariffEventPublisherAdapter`).
 - **Eventos consumidos de RabbitMQ:** Ninguno.
 
 ---
