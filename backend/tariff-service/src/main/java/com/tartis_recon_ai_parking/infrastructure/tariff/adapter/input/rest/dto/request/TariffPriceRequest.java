@@ -1,14 +1,12 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request;
 
-
-import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
-
+import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public class TariffPriceRequest {
 
     @NotNull
-    VehicleType type;
+    UUID tariffId;
 
     @NotNull
     int minutes;
@@ -16,13 +14,13 @@ public class TariffPriceRequest {
     public TariffPriceRequest() {
     }
 
-    public TariffPriceRequest(VehicleType type, int minutes) {
-        this.type = type;
+    public TariffPriceRequest(UUID tariffId, int minutes) {
+        this.tariffId = tariffId;
         this.minutes = minutes;
     }
 
-    public VehicleType getVehicleType() { return type; }
-    public void setVehicleType(VehicleType type) { this.type = type; }
+    public UUID getTariffId() { return tariffId; }
+    public void setTariffId(UUID tariffId) { this.tariffId = tariffId; }
 
     public int getMinutes() { return minutes; }
     public void setMinutes(int minutes) { this.minutes = minutes; }

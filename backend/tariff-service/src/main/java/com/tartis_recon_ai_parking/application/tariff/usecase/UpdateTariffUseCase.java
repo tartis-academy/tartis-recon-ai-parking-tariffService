@@ -8,6 +8,7 @@ import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPub
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffPersistence;
 import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 
 import java.time.Instant;
@@ -38,6 +39,14 @@ public class UpdateTariffUseCase {
                 && tariffPersistence.existsByName(updateDTO.getName())) {
             throw new TariffAlreadyExistsException(
                     "A tariff with that name already exists.");
+        }
+
+        // IN-17 (Inmutabilidad de precios): Los precios no se pueden modificar.
+        // Si se desean cambiar los precios, se debe crear una tarifa nueva.
+        if (existing.getBasePrice().compareTo(updateDTO.getBasePrice()) != 0
+                || existing.getPricePerMinute().compareTo(updateDTO.getPricePerMinute()) != 0) {
+            throw new TariffConstraintException(
+                    "Tariff prices cannot be modified to preserve billing history. Create a new tariff instead.");
         }
 
         Tariff updated = existing.update(

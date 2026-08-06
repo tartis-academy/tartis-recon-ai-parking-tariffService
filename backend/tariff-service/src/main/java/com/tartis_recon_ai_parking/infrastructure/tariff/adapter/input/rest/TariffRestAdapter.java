@@ -128,7 +128,7 @@ public class TariffRestAdapter {
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO', 'SERVICE')")
     public ResponseEntity<PriceResponse> calculatePrice(@Valid @RequestBody TariffPriceRequest request) {
         
-        PriceTransferDTO price = priceCalculator.execute(request.getVehicleType(), request.getMinutes());
+        PriceTransferDTO price = priceCalculator.execute(request.getTariffId(), request.getMinutes());
         
         return ResponseEntity.ok(mapper.toResponse(price));
     }
