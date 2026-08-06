@@ -177,7 +177,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /tariffs/{tariffId}/status:
+  /tariffs/{id}/status:
     patch:
       tags: [tariffs]
       operationId: changeTariffStatus
@@ -369,7 +369,7 @@ components:
 
   parameters:
     TariffIdPath:
-      name: tariffId
+      name: id
       in: path
       required: true
       schema:
@@ -415,7 +415,7 @@ components:
     Forbidden:
       description: >
         The authenticated principal does not have the required role
-        (ADMIN, OPERARIO, or SERVICE) for this operation.
+        (ADMIN or OPERARIO) for this operation.
       content:
         application/json:
           schema:
