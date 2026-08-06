@@ -45,6 +45,7 @@ public class CreateTariffUseCase {
             for (Tariff activeTariff : activeTariffs) {
                 Tariff deactivated = activeTariff.deactivate();
                 tariffPersistence.save(deactivated);
+                publishTariffChangedEventQuietly(deactivated);
             }
         }
 

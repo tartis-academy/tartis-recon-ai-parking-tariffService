@@ -37,6 +37,7 @@ public class ActivateTariffUseCase {
             if (!activeTariff.getUniqueId().equals(existing.getUniqueId())) {
                 Tariff deactivated = activeTariff.deactivate();
                 tariffPersistence.save(deactivated);
+                publishTariffChangedEventQuietly(deactivated);
             }
         }
 

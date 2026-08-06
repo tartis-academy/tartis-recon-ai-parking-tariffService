@@ -100,7 +100,7 @@ class CreateTariffUseCaseTest {
         org.junit.jupiter.api.Assertions.assertTrue(hasDeactivated, "Deberia haberse guardado una version inactiva de la tarifa anterior");
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publish(eventCaptor.capture());
     }
 
     @Test

@@ -45,7 +45,7 @@ class PriceCalculateUseCaseTest {
 
         when(tariffPersistence.findById(tariffId)).thenReturn(java.util.Optional.of(tariff));
 
-        PriceTransferDTO result = priceCalculateUseCase.execute(tariffId, 120);
+        PriceTransferDTO result = priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 120);
 
         assertNotNull(result);
         assertEquals(new BigDecimal("8.00"), result.price());
@@ -59,6 +59,6 @@ class PriceCalculateUseCaseTest {
         java.util.UUID tariffId = java.util.UUID.randomUUID();
         when(tariffPersistence.findById(tariffId)).thenReturn(java.util.Optional.empty());
 
-        assertThrows(TariffNotFoundException.class, () -> priceCalculateUseCase.execute(tariffId, 60));
+        assertThrows(TariffNotFoundException.class, () -> priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 60));
     }
 }

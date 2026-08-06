@@ -239,11 +239,11 @@ class TariffRestAdapterTest {
     void shouldAllowCalculatePriceForAdmin() throws Exception {
         UUID tariffId = UUID.randomUUID();
         TariffPriceRequest priceRequest =
-                new TariffPriceRequest(tariffId, 120);
+                new TariffPriceRequest(tariffId, VehicleType.CAR, 120);
         PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
         PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
 
-        when(priceCalculator.execute(tariffId, 120)).thenReturn(priceDto);
+        when(priceCalculator.execute(tariffId, VehicleType.CAR, 120)).thenReturn(priceDto);
         when(mapper.toResponse(priceDto)).thenReturn(response);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
@@ -253,7 +253,7 @@ class TariffRestAdapterTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.price").value(8.00));
 
-        verify(priceCalculator).execute(tariffId, 120);
+        verify(priceCalculator).execute(tariffId, VehicleType.CAR, 120);
     }
 
     // =========================================================================
@@ -385,11 +385,11 @@ class TariffRestAdapterTest {
     void shouldAllowCalculatePriceForOperario() throws Exception {
         UUID tariffId = UUID.randomUUID();
         TariffPriceRequest priceRequest =
-                new TariffPriceRequest(tariffId, 120);
+                new TariffPriceRequest(tariffId, VehicleType.CAR, 120);
         PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
         PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
 
-        when(priceCalculator.execute(tariffId, 120)).thenReturn(priceDto);
+        when(priceCalculator.execute(tariffId, VehicleType.CAR, 120)).thenReturn(priceDto);
         when(mapper.toResponse(priceDto)).thenReturn(response);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
@@ -399,7 +399,7 @@ class TariffRestAdapterTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.price").value(8.00));
 
-        verify(priceCalculator).execute(tariffId, 120);
+        verify(priceCalculator).execute(tariffId, VehicleType.CAR, 120);
     }
 
     // =========================================================================
@@ -431,11 +431,11 @@ class TariffRestAdapterTest {
     void shouldAllowCalculatePriceForService() throws Exception {
         UUID tariffId = UUID.randomUUID();
         TariffPriceRequest priceRequest =
-                new TariffPriceRequest(tariffId, 120);
+                new TariffPriceRequest(tariffId, VehicleType.CAR, 120);
         PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
         PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
 
-        when(priceCalculator.execute(tariffId, 120)).thenReturn(priceDto);
+        when(priceCalculator.execute(tariffId, VehicleType.CAR, 120)).thenReturn(priceDto);
         when(mapper.toResponse(priceDto)).thenReturn(response);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
@@ -445,7 +445,7 @@ class TariffRestAdapterTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.price").value(8.00));
 
-        verify(priceCalculator).execute(tariffId, 120);
+        verify(priceCalculator).execute(tariffId, VehicleType.CAR, 120);
     }
 
     @Test
@@ -602,7 +602,7 @@ class TariffRestAdapterTest {
     void shouldDenyCalculatePriceForUser() throws Exception {
         UUID tariffId = UUID.randomUUID();
         TariffPriceRequest priceRequest =
-                new TariffPriceRequest(tariffId, 120);
+                new TariffPriceRequest(tariffId, VehicleType.CAR, 120);
 
         mockMvc.perform(post("/v1/tariffs/calculate")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER")))
@@ -610,7 +610,7 @@ class TariffRestAdapterTest {
                         .content(objectMapper.writeValueAsString(priceRequest)))
                 .andExpect(status().isForbidden());
 
-        verify(priceCalculator, never()).execute(any(), anyInt());
+        verify(priceCalculator, never()).execute(any(), any(), anyInt());
     }
 
     // =========================================================================
@@ -719,7 +719,7 @@ class TariffRestAdapterTest {
         String createBody = "{\"name\":\"Standard\",\"type\":\"CAR\",\"pricePerMinute\":0.05,\"basePrice\":2.0,\"active\":true}";
         String updateBody = "{\"name\":\"Premium\",\"pricePerMinute\":0.08,\"basePrice\":3.0}";
         String statusBody = "{\"active\":true}";
-        String calculateBody = "{\"tariffId\":\"" + id + "\",\"minutes\":60}";
+        String calculateBody = "{\"tariffId\":\"" + id + "\",\"type\":\"CAR\",\"minutes\":60}";
         return Stream.of(
                 arguments(get("/v1/tariffs"), "/v1/tariffs"),
                 arguments(get("/v1/tariffs/active").param("type", "CAR"), "/v1/tariffs/active"),

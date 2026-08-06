@@ -70,7 +70,7 @@ class ActivateTariffUseCaseTest {
         assertTrue(hasDeactivated, "Deberia haberse guardado una version inactiva de la tarifa anterior");
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
+        verify(eventPublisher, times(2)).publish(eventCaptor.capture());
         TariffChangedEvent published = eventCaptor.getValue();
 
         assertEquals("TariffChangedEvent", published.type());
