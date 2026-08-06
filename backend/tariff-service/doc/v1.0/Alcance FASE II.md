@@ -14,15 +14,17 @@ En la Fase 2 (`v1.0.0`), `tariff-service` incorpora el **algoritmo de cálculo d
 
 ---
 
-## 2. Reglas del Algoritmo de Cálculo Tarifario (v1.0.0)
+## 2. Reglas del Algoritmo de Cálculo Tarifario por Tipo de Vehículo (v1.0.0)
 
-1. **Cuota Fija & Cortesía (RN-09):** Se aplica una cuota fija de acceso de `0,10 €`. Si el tiempo consumido es $\le 10$ minutos (minutos de cortesía), el importe final es `0,00 €`.
-2. **Tramos Escalonados (RN-07):**
-   - Tramo 1 (Minutos 11 a 60): `0,03 €/minuto`.
-   - Tramo 2 (Minutos 61 a 1440 / 24 horas): `0,02 €/minuto`.
-   - Tramo 3 (Minutos > 1440 / días posteriores): `0,01 €/minuto`.
-3. **Acumulación Escalonada No Retroactiva (RN-08):** Al cruzar de tramo, los minutos del tramo anterior conservan su precio específico sin recargar el tramo completo.
-4. **Redondeo (RN-06):** Los minutos se redondean hacia arriba a favor del sistema (ej: 10 min y 1 seg = 11 minutos).
+El cálculo del importe de estancia en `tariff-service` se realiza de forma **dinámica según la categoría/tipo de vehículo** (`CAR`, `CAR_PMR`, `MOTORBIKE`):
+
+1. **Obtención de Tarifa Activa por Tipo (IN-08):** El sistema recupera la única tarifa marcada como activa (`active = true`) correspondiente al tipo de vehículo del coche/moto estacionado (`tariffPersistence.findActiveByType(type)`).
+2. **Componentes de la Tarifa:** Cada tarifa configurada por el administrador especifica dos valores clave:
+   - **`basePrice` (Precio Base):** Cuota fija de acceso aplicada al iniciar la estancia.
+   - **`pricePerMinute` (Precio por Minuto):** Tarifa aplicada por cada minuto consumido.
+3. **Fórmula de Cálculo:**
+   $$\text{Importe Total} = \text{basePrice} + (\text{pricePerMinute} \times \text{minutos})$$
+4. **Redondeo:** Los minutos se redondean hacia arriba a favor del sistema en caso de fracciones.
 
 ---
 

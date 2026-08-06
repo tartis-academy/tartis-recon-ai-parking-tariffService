@@ -35,6 +35,7 @@ En la Fase 1 (`v0.5.0`), `tariff-service` gestiona el **catálogo inicial de tar
 | `PUT` | `/v1/tariffs/{tariffId}` | Edición de tarifa | `200 OK` (`TariffResponse`) |
 | `PATCH` | `/v1/tariffs/{tariffId}/deactivate` | Desactivación manual de tarifa | `200 OK` (`TariffResponse`) |
 | `GET` | `/v1/tariffs/current` | Consulta de tarifa activa por tipo | `200 OK` (`TariffResponse`) |
+| `POST` | `/v1/tariffs/calculate` | **Cálculo de importe de estancia** | `200 OK` (`PriceResponse`) |
 
 ---
 
@@ -57,7 +58,8 @@ CREATE TABLE tariff.tariffs (
 
 ## 5. Exclusiones de la Fase 1 (Diferencias con Fase 2 / v1.0.0)
 
-- ❌ **Sin cálculo síncrono avanzado (`/tariffs/calculate`):** No incluía el algoritmo de cortesía 10 min, cuota fija 0,10 € ni tramos escalonados (**RN-06** a **RN-09**).
-- ❌ **Sin garantía del invariante IN-08:** La desactivación automática de tarifas obsoletas se gestionaba manualmente.
-- ❌ **Sin autenticación Keycloak ni RBAC (SEC-03):** Peticiones sin JWT.
-- ❌ **Sin enrutamiento Kong API Gateway:** Peticiones directas al puerto `8083`.
+- ❌ **Sin garantía del invariante IN-08:** La desactivación automática de tarifas previas al activar una nueva no estaba reforzada en el agregador de dominio.
+- ❌ **Sin autenticación Keycloak ni RBAC (SEC-03):** Peticiones ejecutadas sin validación de tokens JWT en el controlador.
+- ❌ **Sin enrutamiento Kong API Gateway:** Invocaciones directas al puerto `8083`.
+- ❌ **Sin control de concurrencia optimista:** Sin columna `version` en la tabla `tariffs`.
+- ❌ **Sin trazabilidad distribuida MDC (GW-06).**
