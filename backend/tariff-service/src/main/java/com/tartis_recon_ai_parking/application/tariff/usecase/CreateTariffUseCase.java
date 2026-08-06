@@ -39,13 +39,16 @@ public class CreateTariffUseCase {
 
         Tariff tariff = TariffDTOFactory.toDomain(createDTO);
 
-        // IN-17 Swap logic for creation
+        // IN-17: un alta activa releva a la tarifa vigente del tipo. Mismo
+        // motivo que en ActivateTariffUseCase para usar el update masivo en vez
+        // de un bucle de save(). La tarifa aun no existe, asi que no hay nada
+        // que excluir.
         if (tariff.isActive()) {
             List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(tariff.getType());
+            tariffPersistence.deactivateActiveByType(tariff.getType(), null);
+
             for (Tariff activeTariff : activeTariffs) {
-                Tariff deactivated = activeTariff.deactivate();
-                tariffPersistence.save(deactivated);
-                publishTariffChangedEventQuietly(deactivated);
+                publishTariffChangedEventQuietly(activeTariff.deactivate());
             }
         }
 

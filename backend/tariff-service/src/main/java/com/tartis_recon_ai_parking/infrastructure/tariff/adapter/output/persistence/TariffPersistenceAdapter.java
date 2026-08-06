@@ -107,6 +107,14 @@ public class TariffPersistenceAdapter implements TariffPersistence {
                         .map(tariffPersistenceMapper::toDomain).toList());
     }
 
+    @Override
+    public int deactivateActiveByType(VehicleType type, UUID excludeId) {
+        return execute("deactivateActiveByType",
+                () -> excludeId == null
+                        ? tariffRepository.deactivateAllActiveByType(type)
+                        : tariffRepository.deactivateOtherActiveByType(type, excludeId));
+    }
+
     /**
      * El orden de los catch importa: Java exige subclase antes que
      * superclase, y ademas queremos distinguir lo reintentable (409/503)

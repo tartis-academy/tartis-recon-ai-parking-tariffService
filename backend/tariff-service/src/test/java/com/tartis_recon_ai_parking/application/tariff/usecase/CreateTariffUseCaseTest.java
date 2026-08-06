@@ -91,13 +91,16 @@ class CreateTariffUseCaseTest {
         assertNotNull(result);
         assertEquals(expectedId, result.getUniqueId());
         
-        // Debe guardar la tarifa anterior desactivada y la nueva activada
+        // Mismo motivo que en ActivateTariffUseCase: el relevo de la vigente va
+        // por update masivo. La tarifa nueva aun no tiene id, asi que no se
+        // excluye ninguna.
+        verify(tariffPersistence).deactivateActiveByType(VehicleType.CAR, null);
+
         ArgumentCaptor<Tariff> captor = ArgumentCaptor.forClass(Tariff.class);
-        verify(tariffPersistence, times(2)).save(captor.capture());
-        
-        List<Tariff> savedTariffs = captor.getAllValues();
-        boolean hasDeactivated = savedTariffs.stream().anyMatch(t -> !t.isActive() && t.getUniqueId().equals(otherActiveTariff.getUniqueId()));
-        org.junit.jupiter.api.Assertions.assertTrue(hasDeactivated, "Deberia haberse guardado una version inactiva de la tarifa anterior");
+        verify(tariffPersistence, times(1)).save(captor.capture());
+        org.junit.jupiter.api.Assertions.assertTrue(captor.getValue().isActive());
+        org.junit.jupiter.api.Assertions.assertEquals(
+                otherActiveTariff.getType(), captor.getValue().getType());
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
         verify(eventPublisher, org.mockito.Mockito.times(2)).publish(eventCaptor.capture());

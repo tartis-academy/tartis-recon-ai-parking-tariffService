@@ -61,13 +61,16 @@ class ActivateTariffUseCaseTest {
 
         assertNotNull(result);
         assertTrue(result.isActive());
-        // Debe guardar la tarifa antigua desactivada y la nueva activada
+
+        // El apagado de la anterior va en un update masivo, no en un save: solo
+        // asi se escribe antes que el encendido y no se viola el indice unico
+        // parcial ux_tariffs_one_active_per_type.
+        verify(tariffPersistence).deactivateActiveByType(VehicleType.CAR, id);
+
         ArgumentCaptor<Tariff> captor = ArgumentCaptor.forClass(Tariff.class);
-        verify(tariffPersistence, times(2)).save(captor.capture());
-        
-        List<Tariff> savedTariffs = captor.getAllValues();
-        boolean hasDeactivated = savedTariffs.stream().anyMatch(t -> !t.isActive() && t.getUniqueId().equals(otherActiveTariff.getUniqueId()));
-        assertTrue(hasDeactivated, "Deberia haberse guardado una version inactiva de la tarifa anterior");
+        verify(tariffPersistence, times(1)).save(captor.capture());
+        assertTrue(captor.getValue().isActive());
+        assertEquals(id, captor.getValue().getUniqueId());
 
         ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
         verify(eventPublisher, times(2)).publish(eventCaptor.capture());

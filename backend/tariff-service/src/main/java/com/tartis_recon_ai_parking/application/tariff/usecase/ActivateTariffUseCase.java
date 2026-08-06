@@ -31,13 +31,15 @@ public class ActivateTariffUseCase {
         Tariff existing = tariffPersistence.findById(id)
                 .orElseThrow(() -> new TariffNotFoundException(id));
 
-        // IN-17 Swap logic
+        // IN-17: el bloqueo pesimista cierra la ventana TOCTOU y de paso nos da
+        // la lista para los eventos; el apagado va en un update masivo que se
+        // escribe antes de activar la nueva (ver TariffRepository).
         List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(existing.getType());
+        tariffPersistence.deactivateActiveByType(existing.getType(), existing.getUniqueId());
+
         for (Tariff activeTariff : activeTariffs) {
             if (!activeTariff.getUniqueId().equals(existing.getUniqueId())) {
-                Tariff deactivated = activeTariff.deactivate();
-                tariffPersistence.save(deactivated);
-                publishTariffChangedEventQuietly(deactivated);
+                publishTariffChangedEventQuietly(activeTariff.deactivate());
             }
         }
 
