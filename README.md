@@ -5,10 +5,10 @@
 `tariff-service` es el microservicio responsable de la configuración del catálogo de tarifas por tipo de vehículo y del cálculo del importe exacto a cobrar por las estancias en el parking **TARTIS Recon-AI**. Sus responsabilidades principales incluyen:
 
 - **Gestión del Catálogo de Tarifas:** Creación, modificación, desactivación y consulta de tarifas por tipo de vehículo (`CAR`, `CAR_PMR`, `MOTORBIKE`).
-- **Garantía del Invariante IN-08:** Garantiza que en todo momento exista como máximo **una única tarifa activa** por categoría de vehículo. Al crear o activar una tarifa nueva para una categoría, la tarifa anterior queda desactivada de forma atómica en la misma transacción.
+- **Garantía del Invariante IN-08:** Garantiza que en todo momento exista como máximo **una única tarifa activa** por categoría de vehículo. Al crear o activar una tarifa nueva para una categoría, la tarifa anterior queda desactivada de forma atómica en la misma transacción (reforzado a nivel de base de datos mediante la migración `V4__add_unique_index_active_type.sql`).
 - **Cálculo del Importe de Estancia (`/tariffs/calculate`):** Invocado síncronamente por `stay-service` durante el check-out para calcular el precio consumido según la tarifa activa de la categoría:
   $$\text{Importe Total} = \text{basePrice} + (\text{pricePerMinute} \times \text{minutos})$$
-- **Emisión de Eventos de Dominio:** Publicación de eventos de cambio de tarifa (`TariffChangedEvent` / `SpringTariffChangedEvent`) hacia RabbitMQ al modificar o desactivar precios.
+- **Emisión de Eventos de Dominio:** Publicación de eventos de cambio de tarifa (`TariffChangedEvent` / `SpringTariffChangedEvent`) hacia RabbitMQ (`parking-events-exchange`) al modificar o desactivar precios.
 
 ---
 
@@ -31,16 +31,16 @@ Todos los endpoints requieren autenticación mediante Bearer Access Token (emiti
 
 ## 3. Casos de Uso (Arquitectura Hexagonal)
 
-Los casos de uso encapsulan las reglas de negocio del dominio de tarifas:
+Los casos de uso encapsulan las reglas de negocio del dominio de tarifas con envoltorios transaccionales (`@Transactional`):
 
-- **`CreateTariffUseCase`:** Registra y activa una tarifa desactivando atómicamente cualquier previa del mismo tipo (IN-08).
-- **`ActivateTariffUseCase`:** Activa una tarifa existente y desactiva la previa.
-- **`DeactivateTariffUseCase`:** Desactiva una tarifa concreta.
+- **`CreateTariffUseCase` / `TransactionalCreateTariffUseCase`:** Registra y activa una tarifa desactivando atómicamente cualquier previa del mismo tipo (IN-08).
+- **`ActivateTariffUseCase` / `TransactionalActivateTariffUseCase`:** Activa una tarifa existente y desactiva la previa.
+- **`DeactivateTariffUseCase` / `TransactionalDeactivateTariffUseCase`:** Desactiva una tarifa concreta.
 - **`GetActiveTariffByTypeUseCase`:** Busca la tarifa vigente (`active = true`) para un tipo de vehículo.
 - **`GetTariffUseCase`:** Consulta una tarifa por su identificador UUID.
 - **`ListTariffsUseCase`:** Retorna el catálogo completo de tarifas.
 - **`PriceCalculateUseCase`:** Ejecuta la fórmula de cálculo de importe tomando la tarifa activa correspondiente al tipo de vehículo.
-- **`UpdateTariffUseCase`:** Actualiza los valores de precio base y precio por minuto de una tarifa.
+- **`UpdateTariffUseCase` / `TransactionalUpdateTariffUseCase`:** Actualiza los valores de precio base y precio por minuto de una tarifa.
 
 ### Puertos de Dominio:
 - **Puerto de Entrada:** `TariffRestAdapter` (`POST /v1/tariffs/calculate`, endpoints CRUD).
@@ -104,7 +104,9 @@ Para ejecutar y probar `tariff-service` de forma independiente sin depender del 
 
 El esquema ya no se crea a mano ni con un `schema.sql` montado como init script: `V1__init.sql` (en `backend/tariff-service/src/main/resources/db/migration`) es la baseline, y Flyway la aplica solo al arrancar la app contra la BD dedicada (perfil `prod`). En dev, Flyway está desactivado (`spring.flyway.enabled=false` en `application-dev.properties`): el Postgres compartido con 5 schemas sigue gestionado por `ddl-auto=update`, fuera del alcance de esta migración.
 
-Para añadir un cambio de esquema: crea `V2__descripcion.sql` (nunca edites `V1__init.sql` una vez desplegado) en la misma carpeta, con el DDL nuevo. Flyway lo detecta y lo aplica en el siguiente arranque.
+- `V1__init.sql`: Baseline de la tabla `tariff.tariffs`.
+- `V2__add_version.sql`: Control de concurrencia optimista (`version`).
+- `V4__add_unique_index_active_type.sql`: Índice único parcial para reforzar la restricción de 1 tarifa activa por tipo a nivel de BD (IN-08).
 
 ---
 
