@@ -8,7 +8,7 @@
 - **Garantía del Invariante IN-08:** Garantiza que en todo momento exista como máximo **una única tarifa activa** por categoría de vehículo. Al crear o activar una tarifa nueva para una categoría, la tarifa anterior queda desactivada de forma atómica en la misma transacción.
 - **Cálculo del Importe de Estancia (`/tariffs/calculate`):** Invocado síncronamente por `stay-service` durante el check-out para calcular el precio consumido según la tarifa activa de la categoría:
   $$\text{Importe Total} = \text{basePrice} + (\text{pricePerMinute} \times \text{minutos})$$
-- **Emisión de Eventos Internos de Dominio:** Publicación de eventos de cambio de tarifa (`TariffChangedEvent` / `SpringTariffChangedEvent`) al modificar o desactivar precios.
+- **Emisión de Eventos de Dominio:** Publicación de eventos de cambio de tarifa (`TariffChangedEvent` / `SpringTariffChangedEvent`) hacia RabbitMQ al modificar o desactivar precios.
 
 ---
 
@@ -65,6 +65,8 @@ Los casos de uso encapsulan las reglas de negocio del dominio de tarifas:
 | `DB_HOST` | Host de la BD compartida de desarrollo | `localhost` | Dev |
 | `DB_PORT` | Puerto de la BD compartida | `5432` | Dev |
 | `DB_NAME` | Nombre de la BD de desarrollo | `parking_dev` | Dev |
+| `DB_USER` | Usuario de la BD de desarrollo | `parking_dev` | Dev |
+| `DB_PASSWORD` | Contraseña de la BD de desarrollo | `change.me` | Dev |
 | `TARIFF_DB_HOST` | Host de la BD dedicada de tarifas | `parking-tariff-postgres` | Prod / Aislado |
 | `TARIFF_DB_PORT` | Puerto del host para la BD dedicada | `5435` (externo) / `5432` (interno) | Prod / Aislado |
 | `TARIFF_DB_NAME` | Nombre de la BD dedicada | `tariff_db` | Prod / Aislado |
@@ -77,20 +79,37 @@ Los casos de uso encapsulan las reglas de negocio del dominio de tarifas:
 
 ## 6. Ejecución de forma aislada
 
-### Opción 1: Entorno de Desarrollo (Perfil `dev`)
-```bash
-cd backend/tariff-service
-mvn spring-boot:run
-```
+Para ejecutar y probar `tariff-service` de forma independiente sin depender del resto de microservicios:
 
-### Opción 2: Base de Datos Dedicada (Perfil `prod` / Contenedores Aislados)
-1. Arrancar la base de datos exclusiva PostgreSQL en el puerto `5435`:
+1. **Opción 1: Entorno de Desarrollo (Perfil `dev`)**
+   Navegar a la carpeta del microservicio y arrancar con Maven:
+   ```bash
+   cd backend/tariff-service
+   mvn spring-boot:run
+   ```
+   *El servicio se conectará al esquema `tariff` del Postgres compartido.*
+
+2. **Opción 2: Base de Datos Dedicada (Perfil `prod` / Contenedores Aislados)**
+   Para ejecutar contra una base de datos PostgreSQL exclusiva en puerto `5435`:
    ```bash
    cd backend/tariff-service
    cp .env.example .env
    docker compose up -d
-   ```
-2. Ejecutar la aplicación Spring Boot activando el perfil `prod` para aplicar migraciones Flyway (`V1__init.sql` a `V4__add_unique_index_active_type.sql`):
-   ```bash
    mvn spring-boot:run -Dspring-boot.run.profiles=prod
    ```
+
+---
+
+## 7. Migraciones de base de datos (Flyway)
+
+El esquema ya no se crea a mano ni con un `schema.sql` montado como init script: `V1__init.sql` (en `backend/tariff-service/src/main/resources/db/migration`) es la baseline, y Flyway la aplica solo al arrancar la app contra la BD dedicada (perfil `prod`). En dev, Flyway está desactivado (`spring.flyway.enabled=false` en `application-dev.properties`): el Postgres compartido con 5 schemas sigue gestionado por `ddl-auto=update`, fuera del alcance de esta migración.
+
+Para añadir un cambio de esquema: crea `V2__descripcion.sql` (nunca edites `V1__init.sql` una vez desplegado) en la misma carpeta, con el DDL nuevo. Flyway lo detecta y lo aplica en el siguiente arranque.
+
+---
+
+## 8. Escaneo de imagen (Trivy)
+
+El job `docker-scan` de la CI construye la imagen final del Dockerfile y la escanea con [Trivy](https://trivy.dev/). El informe completo (`CRITICAL` + `HIGH`) se publica siempre en la pestaña **Security** del repo; solo una vulnerabilidad `CRITICAL` hace fallar el job.
+
+Si una `CRITICAL` no tiene fix disponible todavía y hay que aceptar el riesgo de forma consciente, se ignora explícitamente añadiendo su CVE a un `.trivyignore` en la raíz del repo (no existe ninguno hoy).
