@@ -25,7 +25,7 @@ public class PriceCalculateUseCase {
                 .orElseThrow(() -> new TariffNotFoundException(tariffId));
         
         if (tariff.getType() != type) {
-            throw new TariffConstraintException("The provided tariff ID does not match the vehicle type of the stay.");
+            throw new IllegalArgumentException("The provided tariff ID does not match the vehicle type of the stay.");
         }
         
         //Cálculo del precio -> Precio = precioBase + (precioPorMinuto * numMinutos)

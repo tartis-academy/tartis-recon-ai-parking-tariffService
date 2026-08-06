@@ -3,7 +3,7 @@ package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto
 import java.util.UUID;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 public class TariffPriceRequest {
 
@@ -14,7 +14,7 @@ public class TariffPriceRequest {
     private VehicleType type;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private Integer minutes;
 
     public TariffPriceRequest() {

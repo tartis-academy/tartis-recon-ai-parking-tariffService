@@ -10,8 +10,13 @@ import com.tartis_recon_ai_parking.application.tariff.dto.TariffChangedEvent;
 import com.tartis_recon_ai_parking.application.tariff.port.output.TariffEventPublisher;
 import com.tartis_recon_ai_parking.infrastructure.config.RabbitMQConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 public class TariffEventPublisherAdapter implements TariffEventPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(TariffEventPublisherAdapter.class);
     private final ApplicationEventPublisher applicationEventPublisher;
     private final RabbitTemplate rabbitTemplate;
 
@@ -27,9 +32,14 @@ public class TariffEventPublisherAdapter implements TariffEventPublisher {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSpringTariffChangedEvent(SpringTariffChangedEvent springEvent) {
-        rabbitTemplate.convertAndSend(
-            RabbitMQConfig.EXCHANGE_NAME,
-            RabbitMQConfig.ROUTING_KEY_TARIFF_CHANGED,
-            springEvent.getEvent());
+        TariffChangedEvent event = springEvent.getEvent();
+        try {
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_NAME,
+                RabbitMQConfig.ROUTING_KEY_TARIFF_CHANGED,
+                event);
+        } catch (RuntimeException e) {
+            log.error("No se pudo publicar TariffChangedEvent para {}", event.data().tariffId(), e);
+        }
     }
 }
