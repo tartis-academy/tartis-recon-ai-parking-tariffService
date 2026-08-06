@@ -17,11 +17,10 @@ info:
 
     All endpoints require a valid JWT bearer token (Keycloak). Role-based
     access is enforced via @PreAuthorize (SEC-10): read operations
-    (GET /tariffs, GET /tariffs/{id}, GET /tariffs/active) allow ADMIN and
-    OPERARIO; management operations (POST /tariffs, PUT /tariffs/{id},
-    PATCH /tariffs/{id}/status) are ADMIN-only; and price calculation
-    (POST /tariffs/calculate) additionally allows the SERVICE service role
-    used by stay-service at check-out.
+    (GET /tariffs, GET /tariffs/{id}, GET /tariffs/active) and price
+    calculation (POST /tariffs/calculate) allow ADMIN and OPERARIO;
+    management operations (POST /tariffs, PUT /tariffs/{id},
+    PATCH /tariffs/{id}/status) are ADMIN-only.
   contact:
     name: TARTIS Recon-AI - Team Parking
 
@@ -43,15 +42,14 @@ paths:
     get:
       tags: [tariffs]
       operationId: getActiveTariffs
-      summary: Retrieves the active tariffs, optionally filtered by vehicle type (IN-08)
+      summary: Retrieves the active tariffs for a vehicle type (IN-08)
       description: >
-        Returns a list with the currently active tariff(s). If `type` is
-        provided, only tariffs of that vehicle type are returned; at most one
-        active tariff per type exists (IN-08).
+        Returns a list with the currently active tariff(s) for the given
+        `type`; at most one active tariff per type exists (IN-08).
       parameters:
         - name: type
           in: query
-          required: false
+          required: true
           description: Filter active tariffs by vehicle type
           schema:
             $ref: '#/components/schemas/VehicleType'
@@ -222,8 +220,8 @@ paths:
       operationId: calculatePrice
       summary: >
         Calculates the price of a stay (basePrice + pricePerMinute * minutes)
-        using the active tariff for the vehicle type. Called synchronously by
-        stay-service at check-out with minutes already rounded up (RN-06).
+        for the given tariffId. Called synchronously by stay-service at
+        check-out with minutes already rounded up (RN-06).
       requestBody:
         required: true
         content:
@@ -244,7 +242,7 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
-          description: No active tariff configured for the given vehicle type
+          description: No tariff found for the given tariffId
           content:
             application/json:
               schema:
@@ -312,8 +310,12 @@ components:
 
     TariffPriceRequest:
       type: object
-      required: [type, minutes]
+      required: [tariffId, type, minutes]
       properties:
+        tariffId:
+          type: string
+          format: uuid
+          description: The tariff to calculate against (the tarif associated to the stay)
         type:
           $ref: '#/components/schemas/VehicleType'
         minutes:
