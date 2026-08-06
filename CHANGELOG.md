@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **RN-08:** Acumulación escalonada no retroactiva al cruzar de tramo.
   - **RN-06:** Redondeo de minutos hacia arriba a favor del sistema.
 - **Garantía del Invariante IN-08:** Lógica en dominio para asegurar una única tarifa activa por tipo de vehículo, desactivando atómicamente la previa al crear/activar una nueva.
-- **Soporte para Tarifa PMR:** Añadida la categoría `CAR_PMR` en la configuración de tarifas.
 - **Trazabilidad Distribuida & Logging (GW-06):** Inclusión de `CorrelationIdFilter`, `RequestIdentityFilter` y `RequestLoggingFilter` inyectando `correlationId`, `userName` y `clientId` en el MDC.
 
 ### Changed
@@ -36,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **MVP Inicial de `tariff-service`:** Implementación inicial de la arquitectura hexagonal para la gestión de tarifas.
+- **Soporte para Tarifa PMR:** Configuración inicial de tarifas para la categoría de vehículo de movilidad reducida (`CAR_PMR`).
 - **Endpoints REST Síncronos:**
   - `GET /v1/tariffs`: Consulta de catálogo de tarifas.
   - `POST /v1/tariffs`: Creación de tarifas por tipo de vehículo.
