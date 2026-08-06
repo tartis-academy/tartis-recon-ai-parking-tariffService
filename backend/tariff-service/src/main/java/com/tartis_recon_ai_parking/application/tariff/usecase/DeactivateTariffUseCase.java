@@ -9,6 +9,8 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 
 import java.time.Instant;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -29,6 +31,16 @@ public class DeactivateTariffUseCase {
     public TariffDTO execute(UUID id) {
         Tariff existing = tariffPersistence.findById(id)
                 .orElseThrow(() -> new TariffNotFoundException(id));
+
+        // IN-17 Lifecycle protection: Block deactivation if it's the last active tariff
+        if (existing.isActive()) {
+            List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(existing.getType());
+            
+            // Check if this is the only active one
+            if (activeTariffs.size() == 1 && activeTariffs.get(0).getUniqueId().equals(existing.getUniqueId())) {
+                throw new TariffConstraintException("Cannot deactivate the only active tariff for this vehicle type");
+            }
+        }
 
         Tariff deactivated = existing.deactivate();
         Tariff saved = tariffPersistence.save(deactivated);

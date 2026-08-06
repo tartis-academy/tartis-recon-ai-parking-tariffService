@@ -10,6 +10,7 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffAlreadyExistsException;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,20 @@ public class CreateTariffUseCase {
         }
 
         Tariff tariff = TariffDTOFactory.toDomain(createDTO);
+
+        // IN-17: un alta activa releva a la tarifa vigente del tipo. Mismo
+        // motivo que en ActivateTariffUseCase para usar el update masivo en vez
+        // de un bucle de save(). La tarifa aun no existe, asi que no hay nada
+        // que excluir.
+        if (tariff.isActive()) {
+            List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(tariff.getType());
+            tariffPersistence.deactivateActiveByType(tariff.getType(), null);
+
+            for (Tariff activeTariff : activeTariffs) {
+                publishTariffChangedEventQuietly(activeTariff.deactivate());
+            }
+        }
+
         Tariff saved = tariffPersistence.save(tariff);
         publishTariffChangedEventQuietly(saved);
         return TariffDTOFactory.toDTO(saved);

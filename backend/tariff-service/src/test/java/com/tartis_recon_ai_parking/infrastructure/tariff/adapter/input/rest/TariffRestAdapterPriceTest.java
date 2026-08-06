@@ -1,52 +1,76 @@
 package com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tartis_recon_ai_parking.application.tariff.dto.PriceTransferDTO;
 import com.tartis_recon_ai_parking.application.tariff.usecase.PriceCalculateUseCase;
 import com.tartis_recon_ai_parking.domain.tariff.VehicleType;
+import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.request.TariffPriceRequest;
-import com.tartis_recon_ai_parking.infrastructure.tariff.adapter.input.rest.dto.response.PriceResponse;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 class TariffRestAdapterPriceTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
     private PriceCalculateUseCase priceCalculateUseCase;
 
-    @Mock
-    private TariffRestMapper mapper;
+    @Test
+    @DisplayName("Debe devolver el precio calculado exitosamente")
+    void shouldReturnCalculatedPriceSuccessfully() throws Exception {
+        UUID tariffId = UUID.randomUUID();
+        TariffPriceRequest request = new TariffPriceRequest(tariffId, VehicleType.CAR, 120);
+        PriceTransferDTO priceTransferDTO = new PriceTransferDTO(new BigDecimal("8.00"));
 
-    @InjectMocks
-    private TariffRestAdapter tariffRestAdapter;
+        when(priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 120)).thenReturn(priceTransferDTO);
+
+        mockMvc.perform(post("/v1/tariffs/calculate")
+                .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.price").value("8.0"));
+    }
 
     @Test
-    @DisplayName("Debe calcular el precio desde el endpoint del adapter")
-    void shouldCalculatePriceThroughRestEndpoint() {
-        TariffPriceRequest request = new TariffPriceRequest(VehicleType.CAR, 120);
-        PriceTransferDTO priceDto = new PriceTransferDTO(new BigDecimal("8.00"));
-        PriceResponse response = new PriceResponse(new BigDecimal("8.00"));
+    @DisplayName("Debe devolver 404 cuando no se encuentra tarifa activa al calcular")
+    void shouldReturnNotFoundWhenActiveTariffDoesNotExist() throws Exception {
+        UUID tariffId = UUID.randomUUID();
+        TariffPriceRequest request = new TariffPriceRequest(tariffId, VehicleType.CAR, 60);
 
-        when(priceCalculateUseCase.execute(VehicleType.CAR, 120)).thenReturn(priceDto);
-        when(mapper.toResponse(priceDto)).thenReturn(response);
+        when(priceCalculateUseCase.execute(tariffId, VehicleType.CAR, 60))
+                .thenThrow(new TariffNotFoundException(tariffId));
 
-        var result = tariffRestAdapter.calculatePrice(request);
-
-        assertNotNull(result);
-        assertEquals(200, result.getStatusCode().value());
-        assertEquals(new BigDecimal("8.00"), result.getBody().getPrice());
-
-        verify(priceCalculateUseCase).execute(VehicleType.CAR, 120);
+        mockMvc.perform(post("/v1/tariffs/calculate")
+                .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
     }
 }
