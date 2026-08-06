@@ -49,6 +49,11 @@ public class CustomizedExceptionAdapter {
     public ResponseEntity<ErrorResponse> handleInvalidTariff(InvalidTariffException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
+
+    @ExceptionHandler(com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
      
 
     /**

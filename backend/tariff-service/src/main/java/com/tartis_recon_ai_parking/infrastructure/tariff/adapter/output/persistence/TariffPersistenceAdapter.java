@@ -117,6 +117,9 @@ public class TariffPersistenceAdapter implements TariffPersistence {
             return action.get();
 
         } catch (DuplicateKeyException ex) {
+            if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("ux_tariffs_one_active_per_type")) {
+                throw new com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException("There can only be one active tariff per vehicle type.");
+            }
             // Nombre duplicado. Es la carrera que el chequeo previo del
             // caso de uso no puede cerrar: la BD es el arbitro final.
             log.warn("Violacion de unicidad en '{}'", operation, ex);
@@ -147,6 +150,9 @@ public class TariffPersistenceAdapter implements TariffPersistence {
             throw new PersistenceUnavailableException("Temporary database failure.", ex);
 
         } catch (DataIntegrityViolationException ex) {
+            if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("ux_tariffs_one_active_per_type")) {
+                throw new com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException("There can only be one active tariff per vehicle type.");
+            }
             // Integridad no-duplicado (NOT NULL, longitud, CHECK). Si llega
             // aqui es que falta una validacion de entrada: bug nuestro, 500.
             log.error("Violacion de integridad no clasificada en '{}'", operation, ex);

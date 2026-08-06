@@ -70,7 +70,7 @@ public class BeanConfiguration {
 
     @Bean
     public UpdateTariffUseCase updateTariffUseCase(TariffPersistence tariffPersistence, TariffEventPublisher eventPublisher) {
-        return new UpdateTariffUseCase(tariffPersistence, eventPublisher);
+        return new com.tartis_recon_ai_parking.infrastructure.config.tx.TransactionalUpdateTariffUseCase(tariffPersistence, eventPublisher);
     }
 
     @Bean

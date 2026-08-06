@@ -74,7 +74,7 @@ public class TariffRestAdapter {
     // Declarado antes que "/{id}" para que Spring no intente resolver
     // "active" como UUID.
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO', 'SERVICE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO')")
     public ResponseEntity<List<TariffResponse>> getActive(@RequestParam VehicleType type) {
         List<TariffDTO> dtos = getActiveTariffUseCase.execute(type);
         return ResponseEntity.ok(mapper.toResponseList(dtos));
@@ -125,7 +125,7 @@ public class TariffRestAdapter {
     }
 
     @PostMapping("/calculate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO', 'SERVICE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERARIO')")
     public ResponseEntity<PriceResponse> calculatePrice(@Valid @RequestBody TariffPriceRequest request) {
         PriceTransferDTO price = priceCalculator.execute(request.getTariffId(), request.getType(), request.getMinutes());
         return ResponseEntity.ok(mapper.toResponse(price));

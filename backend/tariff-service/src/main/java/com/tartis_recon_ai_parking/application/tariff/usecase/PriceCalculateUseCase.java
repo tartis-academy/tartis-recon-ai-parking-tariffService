@@ -25,7 +25,7 @@ public class PriceCalculateUseCase {
                 .orElseThrow(() -> new TariffNotFoundException(tariffId));
         
         if (tariff.getType() != type) {
-            throw new IllegalArgumentException("The provided tariff ID does not match the vehicle type of the stay.");
+            throw new com.tartis_recon_ai_parking.domain.tariff.exception.TariffTypeMismatchException("The provided tariff ID does not match the vehicle type of the stay.");
         }
         
         //Cálculo del precio -> Precio = precioBase + (precioPorMinuto * numMinutos)
