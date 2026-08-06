@@ -9,6 +9,7 @@ import com.tartis_recon_ai_parking.domain.tariff.Tariff;
 import com.tartis_recon_ai_parking.domain.tariff.exception.TariffNotFoundException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -29,6 +30,18 @@ public class ActivateTariffUseCase {
     public TariffDTO execute(UUID id) {
         Tariff existing = tariffPersistence.findById(id)
                 .orElseThrow(() -> new TariffNotFoundException(id));
+
+        // IN-17: el bloqueo pesimista cierra la ventana TOCTOU y de paso nos da
+        // la lista para los eventos; el apagado va en un update masivo que se
+        // escribe antes de activar la nueva (ver TariffRepository).
+        List<Tariff> activeTariffs = tariffPersistence.findActiveByTypeForUpdate(existing.getType());
+        tariffPersistence.deactivateActiveByType(existing.getType(), existing.getUniqueId());
+
+        for (Tariff activeTariff : activeTariffs) {
+            if (!activeTariff.getUniqueId().equals(existing.getUniqueId())) {
+                publishTariffChangedEventQuietly(activeTariff.deactivate());
+            }
+        }
 
         Tariff activated = existing.activate();
         Tariff saved = tariffPersistence.save(activated);

@@ -219,7 +219,7 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
-  /tariffs/current:
+  /tariffs/active:
     get:
       tags: [tariffs]
       operationId: getCurrentTariff
@@ -389,11 +389,14 @@ components:
 
     CalculateAmountRequest:
       type: object
-      required: [vehicleType, totalMinutes]
+      required: [tariffId, type, minutes]
       properties:
-        vehicleType:
+        tariffId:
+          type: string
+          format: uuid
+        type:
           $ref: '#/components/schemas/VehicleType'
-        totalMinutes:
+        minutes:
           type: integer
           description: Already rounded up in the system's favor by stay-service (RN-06)
 
@@ -457,8 +460,10 @@ components:
     Conflict:
       description: >
         The request conflicts with the current state of the resource: the
-        tariff name is already taken, or a concurrent modification was
-        detected (deadlock / optimistic lock). The client may retry.
+        tariff name is already taken, a concurrent modification was
+        detected (deadlock / optimistic lock), or an attempt was made
+        to modify immutable price fields (IN-17). The client may retry
+        except for price modifications, which require a new tariff.
       content:
         application/json:
           schema:

@@ -29,4 +29,14 @@ public interface TariffPersistence {
     // Busca tarifas activas por tipo de vehiculo
     List<Tariff> findActiveByType(VehicleType type);
 
+    // Busca tarifas activas por tipo de vehiculo aplicando bloqueo pesimista
+    List<Tariff> findActiveByTypeForUpdate(VehicleType type);
+
+    /**
+     * Desactiva en un solo paso las tarifas activas del tipo (IN-17) y
+     * devuelve cuantas cambio. {@code excludeId} deja fuera la tarifa que se
+     * esta activando; con null no se excluye ninguna (alta de tarifa nueva).
+     */
+    int deactivateActiveByType(VehicleType type, UUID excludeId);
+
 }

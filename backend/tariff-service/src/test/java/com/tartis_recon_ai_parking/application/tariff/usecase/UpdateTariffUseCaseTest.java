@@ -45,11 +45,11 @@ class UpdateTariffUseCaseTest {
     private UpdateTariffUseCase updateTariffUseCase;
 
     @Test
-    @DisplayName("Debe actualizar una tarifa exitosamente")
-    void shouldUpdateTariff() {
+    @DisplayName("Debe actualizar el nombre de una tarifa exitosamente sin tocar precios")
+    void shouldUpdateTariffName() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.05"), new BigDecimal("2.0"));
         
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -58,47 +58,35 @@ class UpdateTariffUseCaseTest {
 
         assertNotNull(result);
         assertEquals("Premium", result.getName());
-        assertEquals(new BigDecimal("0.08"), result.getPricePerMinute());
-        assertEquals(new BigDecimal("3.0"), result.getBasePrice());
+        assertEquals(new BigDecimal("0.05"), result.getPricePerMinute());
+        assertEquals(new BigDecimal("2.0"), result.getBasePrice());
 
         verify(tariffPersistence).save(any(Tariff.class));
-
-        ArgumentCaptor<TariffChangedEvent> eventCaptor = ArgumentCaptor.forClass(TariffChangedEvent.class);
-        verify(eventPublisher).publish(eventCaptor.capture());
-        TariffChangedEvent published = eventCaptor.getValue();
-
-        assertEquals("TariffChangedEvent", published.type());
-        assertEquals("v1", published.version());
-        assertEquals(id, published.data().tariffId());
-        assertEquals("Premium", published.data().name());
-        assertEquals(VehicleType.CAR, published.data().vehicleType());
-        assertEquals(new BigDecimal("0.08"), published.data().pricePerMinute());
-        assertEquals(new BigDecimal("3.0"), published.data().basePrice());
     }
 
     @Test
-    @DisplayName("Si publicar TariffChangedEvent falla, se registra pero no se propaga: la tarifa ya se actualizo")
-    void shouldSwallowEventPublishFailureOnUpdate() {
+    @DisplayName("Debe lanzar excepcion si se intentan modificar los precios de una tarifa")
+    void shouldThrowExceptionWhenModifyingPrices() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
-
+        
+        // Cambio de precio por minuto
+        TariffUpdateDTO updateDto1 = new TariffUpdateDTO("Standard", new BigDecimal("0.08"), new BigDecimal("2.0"));
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
-        when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        doThrow(new IllegalStateException("rabbitmq no disponible"))
-                .when(eventPublisher).publish(any(TariffChangedEvent.class));
+        assertThrows(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException.class, () -> updateTariffUseCase.execute(id, updateDto1));
 
-        TariffDTO result = assertDoesNotThrow(() -> updateTariffUseCase.execute(id, updateDto));
-
-        assertEquals("Premium", result.getName());
-        verify(eventPublisher).publish(any(TariffChangedEvent.class));
+        // Cambio de precio base
+        TariffUpdateDTO updateDto2 = new TariffUpdateDTO("Standard", new BigDecimal("0.05"), new BigDecimal("3.0"));
+        assertThrows(com.tartis_recon_ai_parking.domain.tariff.exception.TariffConstraintException.class, () -> updateTariffUseCase.execute(id, updateDto2));
+        
+        verify(tariffPersistence, never()).save(any());
     }
 
     @Test
     @DisplayName("Debe lanzar excepcion si la tarifa a actualizar no existe")
     void shouldThrowExceptionWhenTariffNotFound() {
         UUID id = UUID.randomUUID();
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.05"), new BigDecimal("2.0"));
         
         when(tariffPersistence.findById(id)).thenReturn(Optional.empty());
 
@@ -110,7 +98,7 @@ class UpdateTariffUseCaseTest {
     void shouldNotCheckDuplicateWhenNameUnchanged() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Standard", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Standard", new BigDecimal("0.05"), new BigDecimal("2.0"));
 
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
         when(tariffPersistence.save(any(Tariff.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -125,7 +113,7 @@ class UpdateTariffUseCaseTest {
     void shouldThrowExceptionWhenRenamingToExistingName() {
         UUID id = UUID.randomUUID();
         Tariff existingTariff = Tariff.reconstruct(id, "Standard", VehicleType.CAR, new BigDecimal("0.05"), new BigDecimal("2.0"), true);
-        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.08"), new BigDecimal("3.0"));
+        TariffUpdateDTO updateDto = new TariffUpdateDTO("Premium", new BigDecimal("0.05"), new BigDecimal("2.0"));
 
         when(tariffPersistence.findById(id)).thenReturn(Optional.of(existingTariff));
         when(tariffPersistence.existsByName("Premium")).thenReturn(true);
