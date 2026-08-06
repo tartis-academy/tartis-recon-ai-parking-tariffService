@@ -719,7 +719,7 @@ class TariffRestAdapterTest {
         String createBody = "{\"name\":\"Standard\",\"type\":\"CAR\",\"pricePerMinute\":0.05,\"basePrice\":2.0,\"active\":true}";
         String updateBody = "{\"name\":\"Premium\",\"pricePerMinute\":0.08,\"basePrice\":3.0}";
         String statusBody = "{\"active\":true}";
-        String calculateBody = "{\"type\":\"CAR\",\"minutes\":60}";
+        String calculateBody = "{\"tariffId\":\"" + id + "\",\"minutes\":60}";
         return Stream.of(
                 arguments(get("/v1/tariffs"), "/v1/tariffs"),
                 arguments(get("/v1/tariffs/active").param("type", "CAR"), "/v1/tariffs/active"),
